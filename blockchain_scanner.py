@@ -5,7 +5,7 @@ import time
 import traceback
 
 POLYGON_RPC_URL = 'https://rpc-mainnet.matic.quiknode.pro'
-BATTLE_CONTRACT = '0xf76990A1dE186cC67d39c89616d841cebcAf0C20'
+BATTLE_CONTRACT = '0xb77fe8640CE0e3C613771d100c9412a3f92dC194'
 BLOCK_CHUNK_SIZE = 2500
 
 # Binding database models
