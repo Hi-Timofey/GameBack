@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request, HTTPException
 import models
 import schemas
 from database import SessionLocal, engine
@@ -20,17 +20,23 @@ def get_db():
 
 
 @app.get('/battles/list', response_model = List[schemas.Offer])
-def battles_list(db: Session = Depends(get_db)):
+def battles_list(request: Request, db: Session = Depends(get_db)):
+    if request.headers['host'] != 'api.battleverse.io':
+        return HTTPException(404)
     return db.query(models.Offer).all()
 
 
 @app.get('/battles/accepts', response_model = List[schemas.Offer])
-def accepts_list(offer_id: int, db: Session = Depends(get_db)):
+def accepts_list(offer_id: int, request: Request, db: Session = Depends(get_db)):
+    if request.headers['host'] != 'api.battleverse.io':
+        return HTTPException(404)
     return db.query(models.Accept).filter(models.Accept.offer_id == offer_id).all()
 
 
 @app.get('/last_block', response_model = int)
-def last_block(db: Session = Depends(get_db)):
+def last_block(request: Request, db: Session = Depends(get_db)):
+    if request.headers['host'] != 'api.battleverse.io':
+        return HTTPException(404)
     return db.query(models.Blockchain).first().last_scanned_block
 
 
