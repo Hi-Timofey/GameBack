@@ -9,6 +9,7 @@ class Offer(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     creator = Column(String(42), index=True)
+    nft = Column(Integer, index=True)
     accepts = relationship("Accept", back_populates="offer")
 
 
@@ -17,6 +18,7 @@ class Accept(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     acceptor = Column(String(42), index=True)
+    nft = Column(Integer, index=True)
     offer_id = Column(Integer, ForeignKey("offers.id"))
 
     offer = relationship("Offer", back_populates="accepts")

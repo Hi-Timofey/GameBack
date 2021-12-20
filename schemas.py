@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class Accept(BaseModel):
     id: int
     acceptor: str
+    nft: int
     offer_id: int
 
     class Config:
@@ -12,6 +13,7 @@ class Accept(BaseModel):
 class Offer(BaseModel):
     id: int
     creator: str
+    nft: int
     accepts: List[Accept] = []
 
     class Config:
