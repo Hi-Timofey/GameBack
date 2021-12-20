@@ -63,6 +63,8 @@ def nfts_by_address(address: str, request: Request):
     #if request.headers['host'] != 'api.battleverse.io':
     #    return HTTPException(404)
 
+    address = Web3.toChecksumAddress(address)
+
     polygon = Web3(Web3.HTTPProvider(POLYGON_RPC))
     ethereum = Web3(Web3.HTTPProvider(ETHEREUM_RPC))
 

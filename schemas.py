@@ -5,6 +5,7 @@ class Accept(BaseModel):
     id: int
     acceptor: str
     nft: int
+    bet: int
     offer_id: int
 
     class Config:
@@ -14,6 +15,7 @@ class Offer(BaseModel):
     id: int
     creator: str
     nft: int
+    bet: int
     accepts: List[Accept] = []
 
     class Config:
