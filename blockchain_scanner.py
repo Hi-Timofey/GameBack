@@ -67,7 +67,8 @@ while True:
                 fromBlock = block_chunk[0], toBlock = block_chunk[-1]
             ).get_all_entries()
 
-            new_offers = [Offer(id = event.args.offerId, creator = event.args.creator) for event in offer_events]
+            new_offers = [Offer(id = event.args.offerId, creator = event.args.creator,
+                                nft = event.args.nft) for event in offer_events]
             db.bulk_save_objects(new_offers)
             db.flush()
 
@@ -81,7 +82,8 @@ while True:
             new_accepts = [
                 Accept(id = event.args.acceptId,
                        acceptor = event.args.acceptor,
-                       offer_id = event.args.offerId) for event in accept_events
+                       offer_id = event.args.offerId,
+                       nft = event.args.nft) for event in accept_events
             ]
             db.bulk_save_objects(new_accepts)
             db.flush()
