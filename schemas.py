@@ -25,4 +25,12 @@ class Blockchain(BaseModel):
     class Config:
         orm_mode = True
 
+class NFT(BaseModel):
+    token_id: int
+    uri: str
+
+class NFTBalance(BaseModel):
+    shrooms: List[NFT] = []
+    bots: List[NFT] = []
+
 
