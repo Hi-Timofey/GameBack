@@ -1,10 +1,24 @@
 from typing import List, Optional
 from pydantic import BaseModel
+from enum import IntEnum
+
+class NFTType(IntEnum):
+    shroom = 0
+    bot = 1
+
+class NFT(BaseModel):
+    token_id: int
+    nft_type: NFTType
+    uri: Optional[str]
+
+class NFTBalance(BaseModel):
+    shrooms: List[NFT] = []
+    bots: List[NFT] = []
 
 class Accept(BaseModel):
     id: int
     acceptor: str
-    nft: int
+    nft: NFT
     bet: int
     offer_id: int
 
@@ -14,7 +28,7 @@ class Accept(BaseModel):
 class Offer(BaseModel):
     id: int
     creator: str
-    nft: int
+    nft: NFT
     bet: int
     accepts: List[Accept] = []
 
@@ -27,12 +41,6 @@ class Blockchain(BaseModel):
     class Config:
         orm_mode = True
 
-class NFT(BaseModel):
-    token_id: int
-    uri: str
 
-class NFTBalance(BaseModel):
-    shrooms: List[NFT] = []
-    bots: List[NFT] = []
 
 

@@ -1,11 +1,12 @@
 from web3 import Web3
 from models import *
+import schemas
 from database import SessionLocal, engine
 import time
 import traceback
 
 POLYGON_RPC_URL = 'https://rpc-mainnet.matic.quiknode.pro'
-BATTLE_CONTRACT = '0x61780ba3abdb0CaF3BCb90299A14E225D81808ad'
+BATTLE_CONTRACT = '0x07308A32c96F4ce4967370F1D4046E11509ab990'
 BLOCK_CHUNK_SIZE = 2500
 
 # Binding database models
@@ -69,7 +70,7 @@ while True:
 
             new_offers = [Offer(id = event.args.offerId,
                                 creator = event.args.creator,
-                                nft = event.args.nft,
+                                nft = schemas.NFT(event.args.nft, event.args.nfttype),
                                 bet = str(event.args.bet)) for event in offer_events]
             db.bulk_save_objects(new_offers)
             db.flush()
@@ -85,7 +86,7 @@ while True:
                 Accept(id = event.args.acceptId,
                        acceptor = event.args.acceptor,
                        offer_id = event.args.offerId,
-                       nft = event.args.nft,
+                       nft = schemas.NFT(event.args.nft, event.args.nfttype),
                        bet = str(event.args.bet)) for event in accept_events
             ]
             db.bulk_save_objects(new_accepts)
