@@ -18,7 +18,9 @@ class NFTBalance(BaseModel):
 class Accept(BaseModel):
     id: int
     acceptor: str
-    nft: NFT
+    nft: int
+    nft_type: NFTType
+    nft_uri: str
     bet: int
     offer_id: int
 
@@ -28,7 +30,9 @@ class Accept(BaseModel):
 class Offer(BaseModel):
     id: int
     creator: str
-    nft: NFT
+    nft: int
+    nft_type: NFTType
+    nft_uri: str
     bet: int
     accepts: List[Accept] = []
 

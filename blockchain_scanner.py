@@ -2,6 +2,7 @@ from web3 import Web3
 from models import *
 import schemas
 from database import SessionLocal, engine
+from main import get_nft_base_uris
 import time
 import traceback
 
@@ -52,6 +53,9 @@ while True:
         else:
             block_chunk = list(range(last_scanned_block + 1, last_scanned_block + 1 + BLOCK_CHUNK_SIZE))
 
+        # Get base URIs for NFTs
+        shrooms_base_uri, bots_base_uri = get_nft_base_uris()
+
         # Processing the block chunk
         with get_db() as db:
             if not block_chunk:
@@ -70,7 +74,13 @@ while True:
 
             new_offers = [Offer(id = event.args.offerId,
                                 creator = event.args.creator,
-                                nft = schemas.NFT(event.args.nft, event.args.nfttype),
+                                nft=event.args.nft,
+                                nft_type=event.args.nfttype,
+                                nft_uri=(
+                                    shrooms_base_uri + str(event.args.id)
+                                    if event.args.nfttype == 0
+                                    else bots_base_uri + str(event.args.id)
+                                ),
                                 bet = str(event.args.bet)) for event in offer_events]
             db.bulk_save_objects(new_offers)
             db.flush()
@@ -86,7 +96,13 @@ while True:
                 Accept(id = event.args.acceptId,
                        acceptor = event.args.acceptor,
                        offer_id = event.args.offerId,
-                       nft = schemas.NFT(event.args.nft, event.args.nfttype),
+                       nft = event.args.nft,
+                       nft_type = event.args.nfttype,
+                       nft_uri = (
+                           shrooms_base_uri + str(event.args.id)
+                           if event.args.nfttype == 0
+                           else bots_base_uri + str(event.args.id)
+                       ),
                        bet = str(event.args.bet)) for event in accept_events
             ]
             db.bulk_save_objects(new_accepts)

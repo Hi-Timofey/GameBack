@@ -6,7 +6,6 @@ from database import SessionLocal, engine
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from web3 import Web3
-from concurrent.futures import ThreadPoolExecutor
 import random
 
 POLYGON_RPC = 'https://polygon-rpc.com/'
@@ -39,10 +38,23 @@ def get_db():
         db.close()
 
 
+def get_nft_base_uris():
+    polygon = Web3(Web3.HTTPProvider(POLYGON_RPC))
+    ethereum = Web3(Web3.HTTPProvider(ETHEREUM_RPC))
+
+    shrooms = polygon.eth.contract(SHROOMS_CONTRACT, abi=NFT_ABI)
+    bots = ethereum.eth.contract(BOTS_CONTRACT, abi=NFT_ABI)
+
+    shrooms_base_uri = shrooms.functions.tokenURI(0)[:-1]
+    bots_base_uri = bots.functions.tokenURI(0)[:-1]
+
+    return shrooms_base_uri, bots_base_uri
+
 @app.get('/battles/list', response_model = List[schemas.Offer])
 def battles_list(request: Request, address: Optional[str] = None, db: Session = Depends(get_db)):
     #if request.headers['host'] != 'api.battleverse.io':
     #    return HTTPException(404)
+
     if address:
         return db.query(models.Offer).filter(models.Offer.creator == address).all()
     else:
@@ -89,21 +101,24 @@ def nfts_by_address(address: str, request: Request):
     shroom_ids = shrooms.functions.walletOfOwner(address).call()
     bot_ids = bots.functions.walletOfOwner(address).call()
 
-    def get_shroom(token_id):
-        return schemas.NFT(token_id=token_id, nft_type=schemas.NFTType.shroom, uri=shrooms.functions.tokenURI(token_id).call())
+    shrooms_base_uri, bots_base_uri = get_nft_base_uris()
 
-    def get_bot(token_id):
-        return schemas.NFT(token_id=token_id, nft_type=schemas.NFTType.bot, uri=bots.functions.tokenURI(token_id).call())
-
-    with ThreadPoolExecutor(max_workers=16) as executor:
-        return schemas.NFTBalance(
-            shrooms = list(
-                executor.map(get_shroom, shroom_ids)
-            ),
-            bots = list(
-                executor.map(get_bot, bot_ids)
-            )
-        )
+    return schemas.NFTBalance(
+        shrooms = [
+            schemas.NFT(
+                token_id=token_id,
+                nft_type=schemas.NFTType.shroom,
+                uri=shrooms_base_uri + str(token_id))
+            for token_id in shroom_ids
+        ],
+        bots=[
+            schemas.NFT(
+                token_id=token_id,
+                nft_type=schemas.NFTType.bot,
+                uri=bots_base_uri + str(token_id))
+            for token_id in bot_ids
+        ]
+    )
 
 
 
