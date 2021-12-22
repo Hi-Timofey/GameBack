@@ -4,9 +4,10 @@ import models
 import schemas
 from database import SessionLocal, engine
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from web3 import Web3
 from concurrent.futures import ThreadPoolExecutor
+import random
 
 POLYGON_RPC = 'https://polygon-rpc.com/'
 ETHEREUM_RPC = 'https://nodes.mewapi.io/rpc/eth'
@@ -39,10 +40,24 @@ def get_db():
 
 
 @app.get('/battles/list', response_model = List[schemas.Offer])
-def battles_list(request: Request, db: Session = Depends(get_db)):
+def battles_list(request: Request, address: Optional[str] = None, db: Session = Depends(get_db)):
     #if request.headers['host'] != 'api.battleverse.io':
     #    return HTTPException(404)
-    return db.query(models.Offer).all()
+    if address:
+        return db.query(models.Offer).filter(models.Offer.creator == address).all()
+    else:
+        return db.query(models.Offer).all()
+
+@app.get('/battles/recommended', response_model = List[schemas.Offer])
+def battles_recommended(request: Request, db: Session = Depends(get_db)):
+    #if request.headers['host'] != 'api.battleverse.io':
+    #    return HTTPException(404)
+    all_offers = db.query(models.Offer).all()
+    if len(all_offers) >= 3:
+        return random.sample(all_offers, k=3)
+    else:
+        return all_offers
+
 
 
 @app.get('/battles/accepts', response_model = List[schemas.Offer])
@@ -75,10 +90,10 @@ def nfts_by_address(address: str, request: Request):
     bot_ids = bots.functions.walletOfOwner(address).call()
 
     def get_shroom(token_id):
-        return schemas.NFT(token_id=token_id, uri=shrooms.functions.tokenURI(token_id).call())
+        return schemas.NFT(token_id=token_id, nft_type=schemas.NFTType.shroom, uri=shrooms.functions.tokenURI(token_id).call())
 
     def get_bot(token_id):
-        return schemas.NFT(token_id=token_id, uri=bots.functions.tokenURI(token_id).call())
+        return schemas.NFT(token_id=token_id, nft_type=schemas.NFTType.bot, uri=bots.functions.tokenURI(token_id).call())
 
     with ThreadPoolExecutor(max_workers=16) as executor:
         return schemas.NFTBalance(
