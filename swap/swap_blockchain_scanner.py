@@ -310,7 +310,7 @@ polygon_w3 = Web3(Web3.HTTPProvider(POLYGON_RPC_URL))
 
 # Creating contract instances
 qzq_contract = polygon_w3.eth.contract(address=QZQ_CONTRACT, abi=QZQ_ABI)
-bvc_router_contract = bsc_w3.eth.contract(address=BVC_ROUTER_CONTRACT, abi=BVC_ROUTER_CONTRACT)
+bvc_router_contract = bsc_w3.eth.contract(address=BVC_ROUTER_CONTRACT, abi=BVC_ROUTER_ABI)
 
 while True:
     # Processing events on BSC
