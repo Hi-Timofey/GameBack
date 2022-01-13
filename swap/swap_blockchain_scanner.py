@@ -1,7 +1,6 @@
 from web3 import Web3
 from models import *
 from database import SessionLocal, engine
-from main import get_nft_base_uris
 import time
 import traceback
 import os
@@ -14,8 +13,8 @@ BSC_RPC_URL = 'https://bsc-dataseed.binance.org/'
 POLYGON_RPC_URL = 'https://rpc-mainnet.matic.quiknode.pro'
 
 # Contract addresses
-QZQ_CONTRACT = '0x07308A32c96F4ce4967370F1D4046E11509ab990'
-BVC_ROUTER_CONTRACT = '0x0'
+QZQ_CONTRACT = '0x47b8E4661Ca02C258C362A9389f25Dae781C43f7'
+BVC_ROUTER_CONTRACT = '0x7d0B9C5f772F03247DF9f914dEe955316d3853ED'
 
 # Contract ABIs
 QZQ_ABI = '''[
