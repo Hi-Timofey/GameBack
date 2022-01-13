@@ -1,6 +1,5 @@
 from web3 import Web3
 from models import *
-import schemas
 from database import SessionLocal, engine
 from main import get_nft_base_uris
 import time
@@ -77,9 +76,9 @@ while True:
                                 nft=event.args.nft,
                                 nft_type=event.args.nfttype,
                                 nft_uri=(
-                                    shrooms_base_uri + str(event.args.id)
+                                    shrooms_base_uri + str(event.args.nft)
                                     if event.args.nfttype == 0
-                                    else bots_base_uri + str(event.args.id)
+                                    else bots_base_uri + str(event.args.nft)
                                 ),
                                 bet = str(event.args.bet)) for event in offer_events]
             db.bulk_save_objects(new_offers)
@@ -99,9 +98,9 @@ while True:
                        nft = event.args.nft,
                        nft_type = event.args.nfttype,
                        nft_uri = (
-                           shrooms_base_uri + str(event.args.id)
+                           shrooms_base_uri + str(event.args.nft)
                            if event.args.nfttype == 0
-                           else bots_base_uri + str(event.args.id)
+                           else bots_base_uri + str(event.args.nft)
                        ),
                        bet = str(event.args.bet)) for event in accept_events
             ]
@@ -128,7 +127,7 @@ while True:
             ).get_all_entries()
 
             for event in offer_cancel_events:
-                cancelled_offer = Offer.query.filter(Offer.id == event.args.offerId).first()
+                cancelled_offer = db.query(Offer).filter(Offer.id == event.args.offerId).first()
                 db.delete(cancelled_offer)
             db.flush()
 

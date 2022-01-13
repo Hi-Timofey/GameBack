@@ -21,7 +21,7 @@ class Accept(BaseModel):
     nft: int
     nft_type: NFTType
     nft_uri: str
-    bet: int
+    bet: str
     offer_id: int
 
     class Config:
@@ -33,7 +33,7 @@ class Offer(BaseModel):
     nft: int
     nft_type: NFTType
     nft_uri: str
-    bet: int
+    bet: str
     accepts: List[Accept] = []
 
     class Config:

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from web3 import Web3
 import random
+import pydantic
 
 POLYGON_RPC = 'https://polygon-rpc.com/'
 ETHEREUM_RPC = 'https://nodes.mewapi.io/rpc/eth'
@@ -45,8 +46,8 @@ def get_nft_base_uris():
     shrooms = polygon.eth.contract(SHROOMS_CONTRACT, abi=NFT_ABI)
     bots = ethereum.eth.contract(BOTS_CONTRACT, abi=NFT_ABI)
 
-    shrooms_base_uri = shrooms.functions.tokenURI(0)[:-1]
-    bots_base_uri = bots.functions.tokenURI(0)[:-1]
+    shrooms_base_uri = shrooms.functions.tokenURI(0).call()[:-1]
+    bots_base_uri = bots.functions.tokenURI(0).call()[:-1]
 
     return shrooms_base_uri, bots_base_uri
 
@@ -72,7 +73,7 @@ def battles_recommended(request: Request, db: Session = Depends(get_db)):
 
 
 
-@app.get('/battles/accepts', response_model = List[schemas.Offer])
+@app.get('/battles/accepts', response_model = List[schemas.Accept])
 def accepts_list(offer_id: int, request: Request, db: Session = Depends(get_db)):
     #if request.headers['host'] != 'api.battleverse.io':
     #    return HTTPException(404)
