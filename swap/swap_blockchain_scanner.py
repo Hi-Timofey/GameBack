@@ -797,51 +797,43 @@ while True:
         with get_db() as db:
             last_scanned_block = db.query(Blockchain).first().last_bsc_block
 
-        if last_bsc_block == last_scanned_block:
-            print('Fully synced up, sleeping...')
-            time.sleep(0.75)
-            continue
+        if last_bsc_block != last_scanned_block:
+            # Make a block chunk
+            # Checking if there are more than BLOCK_CHUNK_SIZE blocks to process
+            if last_bsc_block - (last_scanned_block + 1) < BLOCK_CHUNK_SIZE:
+                block_chunk = list(range(last_scanned_block + 1, last_bsc_block))
+            else:
+                block_chunk = list(range(last_scanned_block + 1, last_scanned_block + 1 + BLOCK_CHUNK_SIZE))
 
-        # Make a block chunk
-        # Checking if there are more than BLOCK_CHUNK_SIZE blocks to process
-        if last_bsc_block - (last_scanned_block + 1) < BLOCK_CHUNK_SIZE:
-            block_chunk = list(range(last_scanned_block + 1, last_bsc_block))
-        else:
-            block_chunk = list(range(last_scanned_block + 1, last_scanned_block + 1 + BLOCK_CHUNK_SIZE))
+            # Processing the block chunk
+            with get_db() as db:
+                if len(block_chunk) >= 2:
+                    print(f'Processing events from block {block_chunk[0]} to {block_chunk[-1]}')
 
-        # Processing the block chunk
-        with get_db() as db:
-            if len(block_chunk) < 2:
-                print('Fully synced up, sleeping...')
-                time.sleep(0.5)
-                continue
+                    # Processing QZQ -> BVC swap events on Polygon
+                    qzq_to_bvc_swaps = qzq_contract.events.BVCSwap.createFilter(
+                        fromBlock = block_chunk[0], toBlock = block_chunk[-1]
+                    ).get_all_entries()
 
-            print(f'Processing events from block {block_chunk[0]} to {block_chunk[-1]}')
+                    # Confirm swap on BSC
+                    for swap in qzq_to_bvc_swaps:
+                        nonce = bsc_w3.eth.get_transaction_count(ORACLE_ADDRESS)
+                        tx = bvc_router_contract.confirmSwap(
+                            swap.args.swapId, swap.args.swapper, swap.args.amountSwapped
+                        ).build_transaction({
+                            'nonce': nonce
+                        })
+                        signed_tx = bsc_w3.eth.account.sign_transaction(tx, private_key=ORACLE_PRIVATE_KEY)
+                        tx_hash = bsc_w3.eth.send_raw_transaction(signed_tx)
+                        print(f'Confirmed swap {tx_hash}')
 
-            # Processing QZQ -> BVC swap events on Polygon
-            qzq_to_bvc_swaps = qzq_contract.events.BVCSwap.createFilter(
-                fromBlock = block_chunk[0], toBlock = block_chunk[-1]
-            ).get_all_entries()
+                    print(f'Processed {len(qzq_to_bvc_swaps)} QZQ -> BVC swaps.')
 
-            # Confirm swap on BSC
-            for swap in qzq_to_bvc_swaps:
-                nonce = bsc_w3.eth.get_transaction_count(ORACLE_ADDRESS)
-                tx = bvc_router_contract.confirmSwap(
-                    swap.args.swapId, swap.args.swapper, swap.args.amountSwapped
-                ).build_transaction({
-                    'nonce': nonce
-                })
-                signed_tx = bsc_w3.eth.account.sign_transaction(tx, private_key=ORACLE_PRIVATE_KEY)
-                tx_hash = bsc_w3.eth.send_raw_transaction(signed_tx)
-                print(f'Confirmed swap {tx_hash}')
-
-            print(f'Processed {len(qzq_to_bvc_swaps)} QZQ -> BVC swaps.')
-
-            # Update last scanned block
-            last_scanned_block = db.query(Blockchain).first()
-            last_scanned_block.last_bsc_block = block_chunk[-1]
-            db.flush()
-            db.commit()
+                    # Update last scanned block
+                    last_scanned_block = db.query(Blockchain).first()
+                    last_scanned_block.last_bsc_block = block_chunk[-1]
+                    db.flush()
+                    db.commit()
     except Exception:
         traceback.print_exc()
 
@@ -854,50 +846,42 @@ while True:
         with get_db() as db:
             last_scanned_block = db.query(Blockchain).first().last_polygon_block
 
-        if last_polygon_block == last_scanned_block:
-            print('Fully synced up, sleeping...')
-            time.sleep(0.5)
-            continue
+        if last_polygon_block != last_scanned_block:
+            # Make a block chunk
+            # Checking if there are more than BLOCK_CHUNK_SIZE blocks to process
+            if last_bsc_block - (last_scanned_block + 1) < BLOCK_CHUNK_SIZE:
+                block_chunk = list(range(last_scanned_block + 1, last_bsc_block))
+            else:
+                block_chunk = list(range(last_scanned_block + 1, last_scanned_block + 1 + BLOCK_CHUNK_SIZE))
 
-        # Make a block chunk
-        # Checking if there are more than BLOCK_CHUNK_SIZE blocks to process
-        if last_bsc_block - (last_scanned_block + 1) < BLOCK_CHUNK_SIZE:
-            block_chunk = list(range(last_scanned_block + 1, last_bsc_block))
-        else:
-            block_chunk = list(range(last_scanned_block + 1, last_scanned_block + 1 + BLOCK_CHUNK_SIZE))
+            # Processing the block chunk
+            with get_db() as db:
+                if len(block_chunk) >= 2:
+                    print(f'Processing events from block {block_chunk[0]} to {block_chunk[-1]}')
 
-        # Processing the block chunk
-        with get_db() as db:
-            if len(block_chunk) < 2:
-                print('Fully synced up, sleeping...')
-                time.sleep(0.75)
-                continue
+                    # Processing BVC -> QZQ swap events on BSC
+                    bvc_to_qzq_swaps = bvc_router_contract.events.QZQSwap.createFilter(
+                        fromBlock=block_chunk[0], toBlock=block_chunk[-1]
+                    ).get_all_entries()
 
-            print(f'Processing events from block {block_chunk[0]} to {block_chunk[-1]}')
+                    # Confirm swap on Polygon
+                    for swap in bvc_to_qzq_swaps:
+                        nonce = polygon_w3.eth.get_transaction_count(ORACLE_ADDRESS)
+                        tx = qzq_contract.confirmSwap(
+                            swap.args.swapId, swap.args.swapper, swap.args.amountReceived
+                        ).build_transaction({
+                            'nonce': nonce
+                        })
+                        signed_tx = polygon_w3.eth.account.sign_transaction(tx, private_key=ORACLE_PRIVATE_KEY)
+                        tx_hash = polygon_w3.eth.send_raw_transaction(signed_tx)
+                        print(f'Confirmed swap {tx_hash}')
 
-            # Processing BVC -> QZQ swap events on BSC
-            bvc_to_qzq_swaps = bvc_router_contract.events.QZQSwap.createFilter(
-                fromBlock=block_chunk[0], toBlock=block_chunk[-1]
-            ).get_all_entries()
+                    print(f'Processed {len(bvc_to_qzq_swaps)} BVC -> QZQ swaps.')
 
-            # Confirm swap on Polygon
-            for swap in bvc_to_qzq_swaps:
-                nonce = polygon_w3.eth.get_transaction_count(ORACLE_ADDRESS)
-                tx = qzq_contract.confirmSwap(
-                    swap.args.swapId, swap.args.swapper, swap.args.amountReceived
-                ).build_transaction({
-                    'nonce': nonce
-                })
-                signed_tx = polygon_w3.eth.account.sign_transaction(tx, private_key=ORACLE_PRIVATE_KEY)
-                tx_hash = polygon_w3.eth.send_raw_transaction(signed_tx)
-                print(f'Confirmed swap {tx_hash}')
-
-            print(f'Processed {len(bvc_to_qzq_swaps)} BVC -> QZQ swaps.')
-
-            # Update last scanned block
-            last_scanned_block = db.query(Blockchain).first()
-            last_scanned_block.last_polygon_block = block_chunk[-1]
-            db.flush()
-            db.commit()
+                    # Update last scanned block
+                    last_scanned_block = db.query(Blockchain).first()
+                    last_scanned_block.last_polygon_block = block_chunk[-1]
+                    db.flush()
+                    db.commit()
     except Exception:
         traceback.print_exc()
