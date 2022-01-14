@@ -849,8 +849,8 @@ while True:
         if last_polygon_block != last_scanned_block:
             # Make a block chunk
             # Checking if there are more than BLOCK_CHUNK_SIZE blocks to process
-            if last_bsc_block - (last_scanned_block + 1) < BLOCK_CHUNK_SIZE:
-                block_chunk = list(range(last_scanned_block + 1, last_bsc_block))
+            if last_polygon_block - (last_scanned_block + 1) < BLOCK_CHUNK_SIZE:
+                block_chunk = list(range(last_scanned_block + 1, last_polygon_block))
             else:
                 block_chunk = list(range(last_scanned_block + 1, last_scanned_block + 1 + BLOCK_CHUNK_SIZE))
 
