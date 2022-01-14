@@ -10,7 +10,7 @@ ORACLE_ADDRESS = os.environ['ORACLE_ADDRESS']
 
 # RPC URLs
 BSC_RPC_URL = 'https://bsc-dataseed.binance.org/'
-POLYGON_RPC_URL = 'https://rpc-mainnet.matic.quiknode.pro'
+POLYGON_RPC_URL = 'https://rpc-mainnet.matic.network'
 
 # Contract addresses
 QZQ_CONTRACT = '0x492BA2a50E8893a6e6e3dc6C420b909E6546Fcc2'
