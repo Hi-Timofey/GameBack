@@ -66,7 +66,6 @@ async def accept_offer(accept_json: schemas.Accept):
 async def start_battle(battle_json: schemas.Battle):
     db_sess = database.create_session()
 
-    breakpoint()
     if db_sess.query(Battle).filter(Battle.offer_id == battle_json.offer_id).first():
         raise HTTPException(status_code=400, detail="Battle already started")
 
@@ -78,7 +77,6 @@ async def start_battle(battle_json: schemas.Battle):
 
     battle_json.id = battle.id
 
-    breakpoint()
     return battle_json
 
 if __name__ == "__main__":
