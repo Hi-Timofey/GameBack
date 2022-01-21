@@ -8,6 +8,7 @@ import schemas
 
 from db import database
 
+from db.move import Move, Choice
 from db.accept import Accept
 from db.offer import Offer
 from db.battle import Battle
@@ -62,11 +63,13 @@ async def accept_offer(accept_json: schemas.Accept):
 
     return accept_json
 
+
 @app.post("/battles/start", response_model=schemas.Battle)
 async def start_battle(battle_json: schemas.Battle):
     db_sess = database.create_session()
 
-    if db_sess.query(Battle).filter(Battle.offer_id == battle_json.offer_id).first():
+    if db_sess.query(Battle).filter(
+            Battle.offer_id == battle_json.offer_id).first():
         raise HTTPException(status_code=400, detail="Battle already started")
 
     battle = Battle()
@@ -78,6 +81,67 @@ async def start_battle(battle_json: schemas.Battle):
     battle_json.id = battle.id
 
     return battle_json
+
+
+@app.post("/battles/move", response_model=schemas.Move)
+async def move_battle(move_json: schemas.Move):
+    db_sess = database.create_session()
+
+    battle = db_sess.query(Battle).filter(
+        Battle.id == move_json.battle_id).first()
+
+    if battle is None:
+        raise HTTPException(status_code=400, detail="Battle not found")
+
+    first_user_id = battle.offer.user_id
+    second_user_id = battle.offer.user_id
+
+    if not (first_user_id == move_json.user_id or second_user_id
+            == move_json.user_id):
+        raise HTTPException(
+            status_code=400,
+            detail="User does not participate in this battle")
+
+    move = Move()
+    move.user_id = move_json.user_id
+    move.battle_id = move_json.battle_id
+    move.round = move_json.round
+    move.choice = move_json.choice
+
+    db_sess.add(move)
+    db_sess.commit()
+    move_json.id = move.id
+    move_json.choice = move.choice.value
+
+    # Check if the opponent has made a move
+    for other_move in battle.moves:
+        if other_move.round == move.round and other_move.user_id != move.user_id:
+
+            # Game logic
+            if other_move.choice == move.choice:
+                print('noone')
+
+            elif other_move.choice == Choice.rock:
+                if move.choice == Choice.scissors:
+                    pass # Other win
+                else:
+                    pass # Move win
+            elif other_move.choice == Choice.paper:
+                if move.choice == Choice.rock:
+                    pass # Other win
+                else:
+                    pass # Move win
+            elif other_move.choice == Choice.scissors:
+                if move.choice == Choice.paper:
+                    pass # Other win
+                else:
+                    pass # Move win
+            break
+
+
+
+    return move_json
+
 
 if __name__ == "__main__":
     database.global_init_sqlite('db.sqlite')
