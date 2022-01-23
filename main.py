@@ -8,6 +8,7 @@ import schemas
 
 from db import database
 
+from db.round import Round
 from db.move import Move, Choice
 from db.accept import Accept
 from db.offer import Offer
@@ -72,9 +73,15 @@ async def start_battle(battle_json: schemas.Battle):
             Battle.offer_id == battle_json.offer_id).first():
         raise HTTPException(status_code=400, detail="Battle already started")
 
+    offer = db_sess.query(Offer).filter(Offer.id == battle_json.offer_id).first()
+    accept = db_sess.query(Accept).filter(Accept.id == battle_json.accept_id).first()
+
+    if offer.user_id == accept.user_id:
+        raise HTTPException(status_code=400, detail="User can't fight himself")
+
     battle = Battle()
-    battle.offer_id = battle_json.offer_id
-    battle.accept_id = battle_json.accept_id
+    battle.offer = offer
+    battle.accept = accept
     db_sess.add(battle)
     db_sess.commit()
 
@@ -94,7 +101,10 @@ async def move_battle(move_json: schemas.Move):
         raise HTTPException(status_code=400, detail="Battle not found")
 
     first_user_id = battle.offer.user_id
-    second_user_id = battle.offer.user_id
+    second_user_id = battle.accept.user_id
+
+    if first_user_id == second_user_id:
+        raise HTTPException(status_code=400, detail="User can't fight himself")
 
     if not (first_user_id == move_json.user_id or second_user_id
             == move_json.user_id):
@@ -102,46 +112,70 @@ async def move_battle(move_json: schemas.Move):
             status_code=400,
             detail="User does not participate in this battle")
 
+    breakpoint()
+
+    round_of_battle = db_sess.query(Round).filter(
+        Round.battle_id == battle.id and Round.round_number == move_json.round
+    ).first()
+
+    if round_of_battle is None:
+        round_of_battle = Round()
+        round_of_battle.round_number = move_json.round
+        round_of_battle.battle = battle
+
     move = Move()
     move.user_id = move_json.user_id
-    move.battle_id = move_json.battle_id
-    move.round = move_json.round
     move.choice = move_json.choice
 
-    db_sess.add(move)
+    round_of_battle.moves.append(move)
+
+    db_sess.add(round_of_battle)
     db_sess.commit()
+
+
+    # Check if the opponent has made a move
+    if len(round_of_battle.moves) == 2:
+        player1 = round_of_battle.moves[0]
+        player2 = round_of_battle.moves[1]
+
+        # Game logic
+        if player1.choice == player2.choice:
+            round_of_battle.winner_user_id = 0
+
+        elif player1.choice == Choice.rock:
+            if player2.choice == Choice.scissors:
+                round_of_battle.winner_user_id = player1.user_id
+            else:
+                round_of_battle.winner_user_id = player2.user_id
+        elif player1.choice == Choice.paper:
+            if player2.choice == Choice.rock:
+                round_of_battle.winner_user_id = player1.user_id
+            else:
+                round_of_battle.winner_user_id = player2.user_id
+        elif player1.choice == Choice.scissors:
+            if player2.choice == Choice.paper:
+                round_of_battle.winner_user_id = player1.user_id
+            else:
+                round_of_battle.winner_user_id = player2.user_id
+
+        db_sess.add(round_of_battle)
+        db_sess.commit()
+
     move_json.id = move.id
     move_json.choice = move.choice.value
 
-    # Check if the opponent has made a move
-    for other_move in battle.moves:
-        if other_move.round == move.round and other_move.user_id != move.user_id:
-
-            # Game logic
-            if other_move.choice == move.choice:
-                print('noone')
-
-            elif other_move.choice == Choice.rock:
-                if move.choice == Choice.scissors:
-                    pass # Other win
-                else:
-                    pass # Move win
-            elif other_move.choice == Choice.paper:
-                if move.choice == Choice.rock:
-                    pass # Other win
-                else:
-                    pass # Move win
-            elif other_move.choice == Choice.scissors:
-                if move.choice == Choice.paper:
-                    pass # Other win
-                else:
-                    pass # Move win
-            break
-
-
-
     return move_json
 
+@app.get("/battles/log", response_model=List[schemas.Round])
+async def get_battle_log(json: schemas.BattleId):
+
+    db_sess = database.create_session()
+
+    battle_id = json.battle_id
+
+    battle = db_sess.query(Battle).filter(Battle.id == battle_id).first()
+    # TODO: Returning winner_user_id=NULL on not finished round
+    return battle.log
 
 if __name__ == "__main__":
     database.global_init_sqlite('db.sqlite')
