@@ -1,13 +1,17 @@
 from fastapi import FastAPI
-from fastapi import HTTPException
+from fastapi import Response, status, HTTPException, Cookie
 import uvicorn
-from typing import List
+from typing import List, Union, Optional
 from sqlalchemy.orm import Session
+import web3
+
+import uuid
 
 import schemas
 
 from db import database
 
+from db.session_keys import SessionKey
 from db.round import Round
 from db.move import Move, Choice
 from db.accept import Accept
@@ -23,8 +27,49 @@ async def index():
     return 'Hello, im working'
 
 
+@app.post("/login")
+async def index(response: Response, json: schemas.LoginAddress, session_key: Optional[str] = Cookie(None)):
+    db_sess = database.create_session()
+    address = json.address
+    random_string = uuid.uuid4()
+
+    session_key = SessionKey(
+        session_key=random_string,
+        user_address=address,
+    )
+
+    db_sess.add(SessionKey)
+    db_sess.commit()
+
+    response.status_code = status.HTTP_201_CREATED
+    response.set_cookie(key="session_key", value=random_string)
+    return {'session_key': random_string}
+
+
+@app.post("/signature")
+async def index(response: Response, json: schemas.LoginSigned, session_key: Optional[str] = Cookie(None)):
+    db_sess = database.create_session()
+    w3 = web3.Web3()
+    signed_key = json.signed
+    account_recovered = w3.eth.account.recover_message(
+        signed_key, signature=session_key)
+
+    breakpoint()
+
+    session = db_sess.query(SessionKey).filter(
+        SessionKey.session_key == session_key).first()
+
+    if session.user_address == account_recovered:
+        session.verified = True
+        db_sess.add(session)
+        db_sess.commit()
+        return 'verified'
+    else:
+        return "not verified"
+
+
 @app.post("/battles/create", response_model=schemas.Offer)
-async def create_offers(offer_json: schemas.Offer):
+async def create_offers(offer_json: schemas.Offer, response: Response):
 
     db_sess = database.create_session()
 
@@ -38,6 +83,7 @@ async def create_offers(offer_json: schemas.Offer):
 
     offer_json.id = offer_db.id
 
+    response.status_code = status.HTTP_201_CREATED
     return offer_json
 
 
@@ -49,7 +95,7 @@ async def list_offers():
 
 
 @app.post("/battles/accept", response_model=schemas.Accept)
-async def accept_offer(accept_json: schemas.Accept):
+async def accept_offer(accept_json: schemas.Accept, response: Response):
     db_sess = database.create_session()
 
     accept = Accept()
@@ -62,19 +108,22 @@ async def accept_offer(accept_json: schemas.Accept):
 
     accept_json.id = accept.id
 
+    response.status_code = status.HTTP_201_CREATED
     return accept_json
 
 
 @app.post("/battles/start", response_model=schemas.Battle)
-async def start_battle(battle_json: schemas.Battle):
+async def start_battle(battle_json: schemas.Battle, response: Response):
     db_sess = database.create_session()
 
     if db_sess.query(Battle).filter(
             Battle.offer_id == battle_json.offer_id).first():
         raise HTTPException(status_code=400, detail="Battle already started")
 
-    offer = db_sess.query(Offer).filter(Offer.id == battle_json.offer_id).first()
-    accept = db_sess.query(Accept).filter(Accept.id == battle_json.accept_id).first()
+    offer = db_sess.query(Offer).filter(
+        Offer.id == battle_json.offer_id).first()
+    accept = db_sess.query(Accept).filter(
+        Accept.id == battle_json.accept_id).first()
 
     if offer.user_id == accept.user_id:
         raise HTTPException(status_code=400, detail="User can't fight himself")
@@ -87,11 +136,12 @@ async def start_battle(battle_json: schemas.Battle):
 
     battle_json.id = battle.id
 
+    response.status_code = status.HTTP_201_CREATED
     return battle_json
 
 
 @app.post("/battles/move", response_model=schemas.Move)
-async def move_battle(move_json: schemas.Move):
+async def move_battle(move_json: schemas.Move, response: Response):
     db_sess = database.create_session()
 
     battle = db_sess.query(Battle).filter(
@@ -132,7 +182,6 @@ async def move_battle(move_json: schemas.Move):
     db_sess.add(round_of_battle)
     db_sess.commit()
 
-
     # Check if the opponent has made a move
     if len(round_of_battle.moves) == 2:
         player1 = round_of_battle.moves[0]
@@ -164,7 +213,9 @@ async def move_battle(move_json: schemas.Move):
     move_json.id = move.id
     move_json.choice = move.choice.value
 
+    response.status_code = status.HTTP_201_CREATED
     return move_json
+
 
 @app.get("/battles/log", response_model=List[schemas.Round])
 async def get_battle_log(json: schemas.BattleId):
@@ -174,8 +225,10 @@ async def get_battle_log(json: schemas.BattleId):
     battle_id = json.battle_id
 
     battle = db_sess.query(Battle).filter(Battle.id == battle_id).first()
+
     # TODO: Returning winner_user_id=NULL on not finished round
     return battle.log
+
 
 if __name__ == "__main__":
     database.global_init_sqlite('db.sqlite')

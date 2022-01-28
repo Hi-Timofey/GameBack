@@ -9,7 +9,7 @@ class Accept(SqlAlchemyBase):
 
     id = sa.Column(sa.Integer,primary_key=True, autoincrement=True)
 
-    user_id = sa.Column(sa.Integer)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"))
     nft_id = sa.Column(sa.Integer)
 
     offer_id = sa.Column(sa.Integer, sa.ForeignKey("offers.id"))

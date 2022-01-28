@@ -17,7 +17,7 @@ class Move(SqlAlchemyBase):
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 
-    user_id = sa.Column(sa.Integer)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"))
 
     round_id = sa.Column(sa.Integer, sa.ForeignKey("rounds.id"))
     round = orm.relationship("Round", back_populates="moves")

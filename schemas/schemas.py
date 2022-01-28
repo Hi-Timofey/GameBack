@@ -78,3 +78,9 @@ class Battle(BaseModel):
 
 class BattleId(BaseModel):
     battle_id: int
+
+class LoginAddress(BaseModel):
+    address: str
+
+class LoginSigned(BaseModel):
+    signed: str
