@@ -7,6 +7,7 @@ import web3
 from eth_account.messages import encode_defunct
 
 import uuid
+import random
 
 import schemas
 
@@ -79,7 +80,7 @@ async def index(response: Response, json: schemas.LoginSigned, session_key: Opti
 
 
 @app.post("/battles/create", response_model=schemas.Offer)
-async def create_offers(offer_json: schemas.Offer, response: Response):
+async def create_offers(offer_json: schemas.Offer, response: Response, session_key: str = Cookie(None)):
 
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
@@ -109,9 +110,32 @@ async def list_offers(session_key: str = Cookie(None)):
     offers = db_sess.query(Offer).all()
     return offers
 
+@app.get("/battles/recommended", response_model=List[schemas.Offer])
+async def list_offers(session_key: str = Cookie(None)):
+    db_sess = database.create_session()
+
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
+
+
+    all_offers = db_sess.query(Offer).all()
+    if len(all_offers) >= 3:
+        return random.sample(all_offers, k=3)
+    else:
+        return all_offers
+
+# Endpoint from old repo GameBack
+@app.get('/battles/accepts', response_model = List[schemas.Accept])
+def accepts_list(offer_id: int, session_key: str = Cookie(None)):
+    db_sess = database.create_session()
+
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
+
+    return db_sess.query(Accept).filter(Accept.offer_id == offer_id).all()
 
 @app.post("/battles/accept", response_model=schemas.Accept)
-async def accept_offer(accept_json: schemas.Accept, response: Response):
+async def accept_offer(accept_json: schemas.Accept, response: Response, session_key: str = Cookie(None)):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -129,9 +153,17 @@ async def accept_offer(accept_json: schemas.Accept, response: Response):
     response.status_code = status.HTTP_201_CREATED
     return accept_json
 
+@app.get("/battles/{battle_id}", response_model=schemas.Battle)
+async def get_battle(battle_id: int, response: Response, session_key: str = Cookie(None)):
+    db_sess = database.create_session()
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
+
+    return db_sess.query(Battle).filter(Battle.id == battle_id).first()
+
 
 @app.post("/battles/start", response_model=schemas.Battle)
-async def start_battle(battle_json: schemas.Battle, response: Response):
+async def start_battle(battle_json: schemas.Battle, response: Response, session_key: str = Cookie(None)):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -161,7 +193,7 @@ async def start_battle(battle_json: schemas.Battle, response: Response):
 
 
 @app.post("/battles/move", response_model=schemas.Move)
-async def move_battle(move_json: schemas.Move, response: Response):
+async def move_battle(move_json: schemas.Move, response: Response, session_key: str = Cookie(None)):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -184,12 +216,12 @@ async def move_battle(move_json: schemas.Move, response: Response):
             status_code=400,
             detail="User does not participate in this battle")
 
-    breakpoint()
 
     round_of_battle = db_sess.query(Round).filter(
-        Round.battle_id == battle.id and Round.round_number == move_json.round
+        Round.battle_id == battle.id).filter(Round.round_number == move_json.round
     ).first()
 
+    breakpoint()
     if round_of_battle is None:
         round_of_battle = Round()
         round_of_battle.round_number = move_json.round
@@ -239,8 +271,9 @@ async def move_battle(move_json: schemas.Move, response: Response):
     return move_json
 
 
-@app.get("/battles/log", response_model=List[schemas.Round])
-async def get_battle_log(json: schemas.BattleId):
+@app.post("/battles/log", response_model=List[schemas.Round])
+async def get_battle_log(json: schemas.BattleId, session_key: str = Cookie(None)):
+
 
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):

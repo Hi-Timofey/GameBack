@@ -75,9 +75,16 @@ class Battle(BaseModel):
     accept_id: int
     log: List[Round] = []
 
+    class Config:
+        orm_mode = True
+
+
 
 class BattleId(BaseModel):
     battle_id: int
+    class Config:
+        orm_mode = True
+
 
 class LoginAddress(BaseModel):
     address: str
