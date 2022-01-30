@@ -21,7 +21,7 @@ from db.accept import Accept
 from db.offer import Offer
 from db.battle import Battle
 
-
+database.global_init_sqlite('db.sqlite')
 app = FastAPI()
 
 app.add_middleware(
@@ -302,5 +302,4 @@ async def get_battle_log(json: schemas.BattleId, session_key: str = Cookie(None)
 
 
 if __name__ == "__main__":
-    database.global_init_sqlite('db.sqlite')
     uvicorn.run(app, host="0.0.0.0", port=80)
