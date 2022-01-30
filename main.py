@@ -4,6 +4,7 @@ import uvicorn
 from typing import List, Union, Optional
 from sqlalchemy.orm import Session
 import web3
+from eth_account.messages import encode_defunct
 
 import uuid
 
@@ -22,6 +23,15 @@ from db.battle import Battle
 app = FastAPI()
 
 
+def check_session(db: Session, session_key: str) -> bool:
+    try:
+        session_key = db.query(SessionKey).filter(
+            SessionKey.session_key == session_key).first()
+        return session_key.verified
+    except BaseException:
+        return False
+
+
 @app.get("/")
 async def index():
     return 'Hello, im working'
@@ -34,11 +44,11 @@ async def index(response: Response, json: schemas.LoginAddress, session_key: Opt
     random_string = uuid.uuid4()
 
     session_key = SessionKey(
-        session_key=random_string,
+        session_key=str(random_string),
         user_address=address,
     )
 
-    db_sess.add(SessionKey)
+    db_sess.add(session_key)
     db_sess.commit()
 
     response.status_code = status.HTTP_201_CREATED
@@ -50,11 +60,10 @@ async def index(response: Response, json: schemas.LoginAddress, session_key: Opt
 async def index(response: Response, json: schemas.LoginSigned, session_key: Optional[str] = Cookie(None)):
     db_sess = database.create_session()
     w3 = web3.Web3()
-    signed_key = json.signed
+    signature = json.signed
     account_recovered = w3.eth.account.recover_message(
-        signed_key, signature=session_key)
+        encode_defunct(text=session_key), signature=signature)
 
-    breakpoint()
 
     session = db_sess.query(SessionKey).filter(
         SessionKey.session_key == session_key).first()
@@ -63,15 +72,18 @@ async def index(response: Response, json: schemas.LoginSigned, session_key: Opti
         session.verified = True
         db_sess.add(session)
         db_sess.commit()
-        return 'verified'
+        response.status_code = status.HTTP_200_OK
+        return {"session_key": session_key, "verified": True}
     else:
-        return "not verified"
+        raise HTTPException(status_code=400, detail="Session not verified")
 
 
 @app.post("/battles/create", response_model=schemas.Offer)
 async def create_offers(offer_json: schemas.Offer, response: Response):
 
     db_sess = database.create_session()
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
 
     offer_db = Offer()
 
@@ -88,8 +100,12 @@ async def create_offers(offer_json: schemas.Offer, response: Response):
 
 
 @app.get("/battles/list", response_model=List[schemas.Offer])
-async def list_offers():
+async def list_offers(session_key: str = Cookie(None)):
     db_sess = database.create_session()
+
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
+
     offers = db_sess.query(Offer).all()
     return offers
 
@@ -97,6 +113,8 @@ async def list_offers():
 @app.post("/battles/accept", response_model=schemas.Accept)
 async def accept_offer(accept_json: schemas.Accept, response: Response):
     db_sess = database.create_session()
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
 
     accept = Accept()
     accept.user_id = accept_json.user_id
@@ -115,6 +133,8 @@ async def accept_offer(accept_json: schemas.Accept, response: Response):
 @app.post("/battles/start", response_model=schemas.Battle)
 async def start_battle(battle_json: schemas.Battle, response: Response):
     db_sess = database.create_session()
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
 
     if db_sess.query(Battle).filter(
             Battle.offer_id == battle_json.offer_id).first():
@@ -143,6 +163,8 @@ async def start_battle(battle_json: schemas.Battle, response: Response):
 @app.post("/battles/move", response_model=schemas.Move)
 async def move_battle(move_json: schemas.Move, response: Response):
     db_sess = database.create_session()
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
 
     battle = db_sess.query(Battle).filter(
         Battle.id == move_json.battle_id).first()
@@ -221,6 +243,8 @@ async def move_battle(move_json: schemas.Move, response: Response):
 async def get_battle_log(json: schemas.BattleId):
 
     db_sess = database.create_session()
+    if not check_session(db_sess, session_key):
+        raise HTTPException(status_code=401)
 
     battle_id = json.battle_id
 
