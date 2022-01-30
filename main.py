@@ -101,13 +101,17 @@ async def create_offers(offer_json: schemas.Offer, response: Response, session_k
 
 
 @app.get("/battles/list", response_model=List[schemas.Offer])
-async def list_offers(session_key: str = Cookie(None)):
+async def list_offers(  user_id: Optional[int] = None, session_key: str = Cookie(None)):
     db_sess = database.create_session()
 
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
 
-    offers = db_sess.query(Offer).all()
+    if user_id:
+        offers = db_sess.query(Offer).filter(Offer.user_id == user_id).all()
+    else:
+        offers = db_sess.query(Offer).all()
+
     return offers
 
 @app.get("/battles/recommended", response_model=List[schemas.Offer])
