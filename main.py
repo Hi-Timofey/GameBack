@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi import Response, status, HTTPException, Cookie
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from typing import List, Union, Optional
 from sqlalchemy.orm import Session
@@ -23,13 +24,21 @@ from db.battle import Battle
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def check_session(db: Session, session_key: str) -> bool:
     try:
         session_key = db.query(SessionKey).filter(
             SessionKey.session_key == session_key).first()
         return session_key.verified
-    except BaseException:
+    except Exception:
         return False
 
 
@@ -64,7 +73,6 @@ async def index(response: Response, json: schemas.LoginSigned, session_key: Opti
     signature = json.signed
     account_recovered = w3.eth.account.recover_message(
         encode_defunct(text=session_key), signature=signature)
-
 
     session = db_sess.query(SessionKey).filter(
         SessionKey.session_key == session_key).first()
@@ -114,6 +122,7 @@ async def list_offers(  user_id: Optional[int] = None, session_key: str = Cookie
 
     return offers
 
+
 @app.get("/battles/recommended", response_model=List[schemas.Offer])
 async def list_offers(session_key: str = Cookie(None)):
     db_sess = database.create_session()
@@ -128,6 +137,7 @@ async def list_offers(session_key: str = Cookie(None)):
     else:
         return all_offers
 
+
 # Endpoint from old repo GameBack
 @app.get('/battles/accepts', response_model = List[schemas.Accept])
 def accepts_list(offer_id: int, session_key: str = Cookie(None)):
@@ -137,6 +147,7 @@ def accepts_list(offer_id: int, session_key: str = Cookie(None)):
         raise HTTPException(status_code=401)
 
     return db_sess.query(Accept).filter(Accept.offer_id == offer_id).all()
+
 
 @app.post("/battles/accept", response_model=schemas.Accept)
 async def accept_offer(accept_json: schemas.Accept, response: Response, session_key: str = Cookie(None)):
@@ -157,8 +168,9 @@ async def accept_offer(accept_json: schemas.Accept, response: Response, session_
     response.status_code = status.HTTP_201_CREATED
     return accept_json
 
+
 @app.get("/battles/{battle_id}", response_model=schemas.Battle)
-async def get_battle(battle_id: int, response: Response, session_key: str = Cookie(None)):
+async def get_battle(battle_id: int, session_key: str = Cookie(None)):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -220,12 +232,10 @@ async def move_battle(move_json: schemas.Move, response: Response, session_key: 
             status_code=400,
             detail="User does not participate in this battle")
 
-
     round_of_battle = db_sess.query(Round).filter(
         Round.battle_id == battle.id).filter(Round.round_number == move_json.round
     ).first()
 
-    breakpoint()
     if round_of_battle is None:
         round_of_battle = Round()
         round_of_battle.round_number = move_json.round
@@ -293,4 +303,4 @@ async def get_battle_log(json: schemas.BattleId, session_key: str = Cookie(None)
 
 if __name__ == "__main__":
     database.global_init_sqlite('db.sqlite')
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=80)

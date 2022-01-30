@@ -8,7 +8,7 @@ from .database import SqlAlchemyBase
 class Offer(SqlAlchemyBase):
     __tablename__ = 'offers'
 
-    id = sa.Column(sa.Integer,primary_key=True, autoincrement=True)
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 
     user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id") )
 

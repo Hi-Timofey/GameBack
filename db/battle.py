@@ -8,7 +8,7 @@ from .database import SqlAlchemyBase
 class Battle(SqlAlchemyBase):
     __tablename__ = 'battles'
 
-    id = sa.Column(sa.Integer,primary_key=True, autoincrement=True)
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 
     offer_id = sa.Column(sa.Integer, sa.ForeignKey("offers.id"))
 

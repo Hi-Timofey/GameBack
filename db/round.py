@@ -3,10 +3,11 @@ from sqlalchemy import orm
 
 from .database import SqlAlchemyBase
 
+
 class Round(SqlAlchemyBase):
     __tablename__ = 'rounds'
 
-    id = sa.Column(sa.Integer,primary_key=True, autoincrement=True)
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 
     round_number = sa.Column(sa.Integer)
     winner_user_id = sa.Column(sa.Integer)
