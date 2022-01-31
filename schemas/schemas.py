@@ -90,4 +90,4 @@ class LoginAddress(BaseModel):
     address: str
 
 class LoginSigned(BaseModel):
-    signed: str
+    signature: str

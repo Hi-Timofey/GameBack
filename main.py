@@ -70,7 +70,7 @@ async def login(response: Response, json: schemas.LoginAddress, session_key: Opt
 async def verify_signature(response: Response, json: schemas.LoginSigned, session_key: str):
     db_sess = database.create_session()
     w3 = web3.Web3()
-    signature = json.signed
+    signature = json.signature
     account_recovered = w3.eth.account.recover_message(
         encode_defunct(text=session_key), signature=signature)
 
