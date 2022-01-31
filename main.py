@@ -48,7 +48,7 @@ async def index():
 
 
 @app.post("/login")
-async def login(response: Response, json: schemas.LoginAddress, session_key: Optional[str] = Cookie(None)):
+async def login(response: Response, json: schemas.LoginAddress):
     db_sess = database.create_session()
     address = json.address
     random_string = uuid.uuid4()
