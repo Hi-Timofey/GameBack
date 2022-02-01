@@ -21,6 +21,17 @@ from db.accept import Accept
 from db.offer import Offer
 from db.battle import Battle
 
+
+# Constants
+POLYGON_RPC = 'https://polygon-rpc.com/'
+ETHEREUM_RPC = 'https://nodes.mewapi.io/rpc/eth'
+
+SHROOMS_CONTRACT = '0xD558BF191abfe28CA37885605C7754E77F9DF0eF'
+BOTS_CONTRACT = '0x0111546FEB693b9d9d5886e362472886b71D5337'
+
+NFT_ABI = '[{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "walletOfOwner", "outputs": [ { "name": "balances", "type": "uint256[]" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "tokenId", "type": "uint256" } ], "name": "tokenURI", "outputs": [ { "name": "uri", "type": "string" } ], "payable": false, "type": "function"}]'
+# ---
+
 database.global_init_sqlite('db.sqlite')
 app = FastAPI()
 
@@ -32,6 +43,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+def get_nft_base_uris():
+    polygon = Web3(Web3.HTTPProvider(POLYGON_RPC))
+    ethereum = Web3(Web3.HTTPProvider(ETHEREUM_RPC))
+
+    shrooms = polygon.eth.contract(SHROOMS_CONTRACT, abi=NFT_ABI)
+    bots = ethereum.eth.contract(BOTS_CONTRACT, abi=NFT_ABI)
+
+    shrooms_base_uri = shrooms.functions.tokenURI(0).call()[:-1]
+    bots_base_uri = bots.functions.tokenURI(0).call()[:-1]
+
+    return shrooms_base_uri,
 
 def check_session(db: Session, session_key: str) -> bool:
     try:
@@ -299,6 +322,39 @@ async def get_battle_log(json: schemas.BattleId, session_key: str = Cookie(None)
 
     # TODO: Returning winner_user_id=NULL on not finished round
     return battle.log
+
+@app.get('/nfts/{address}', response_model = schemas.NFTBalance)
+def nfts_by_address(address: str):
+
+    address = web3.Web3.toChecksumAddress(address)
+
+    polygon = web3.Web3(web3.Web3.HTTPProvider(POLYGON_RPC))
+    ethereum = web3.Web3(web3.Web3.HTTPProvider(ETHEREUM_RPC))
+
+    shrooms = polygon.eth.contract(SHROOMS_CONTRACT, abi = NFT_ABI)
+    bots = ethereum.eth.contract(BOTS_CONTRACT, abi=NFT_ABI)
+
+    shroom_ids = shrooms.functions.walletOfOwner(address).call()
+    bot_ids = bots.functions.walletOfOwner(address).call()
+
+    shrooms_base_uri, bots_base_uri = get_nft_base_uris()
+
+    return schemas.NFTBalance(
+        shrooms = [
+            schemas.NFT(
+                token_id=token_id,
+                nft_type=schemas.NFTType.shroom,
+                uri=shrooms_base_uri + str(token_id))
+            for token_id in shroom_ids
+        ],
+        bots=[
+            schemas.NFT(
+                token_id=token_id,
+                nft_type=schemas.NFTType.bot,
+                uri=bots_base_uri + str(token_id))
+            for token_id in bot_ids
+        ]
+    )
 
 
 if __name__ == "__main__":
