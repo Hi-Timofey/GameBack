@@ -55,7 +55,7 @@ def get_nft_base_uris():
     shrooms_base_uri = shrooms.functions.tokenURI(0).call()[:-1]
     bots_base_uri = bots.functions.tokenURI(0).call()[:-1]
 
-    return shrooms_base_uri,
+    return shrooms_base_uri, bots_base_uri
 
 def check_session(db: Session, session_key: str) -> bool:
     try:
