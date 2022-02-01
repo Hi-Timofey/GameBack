@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from typing import List, Union, Optional
 from sqlalchemy.orm import Session
-import web3
+from web3 import Web3
 from eth_account.messages import encode_defunct
 
 import uuid
