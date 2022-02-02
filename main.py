@@ -74,7 +74,7 @@ async def index():
 @app.post("/login")
 async def login(response: Response, json: schemas.LoginAddress):
     db_sess = database.create_session()
-    address = json.address
+    address = Web3.toChecksumAddress(json.address)
     random_string = uuid.uuid4()
 
     session_key = SessionKey(
@@ -133,7 +133,7 @@ async def create_offers(offer_json: schemas.Offer, response: Response, session_k
 
 
 @app.get("/battles/list", response_model=List[schemas.Offer])
-async def list_offers(  user_id: Optional[int] = None, session_key: str = Cookie(None)):
+async def list_offers(session_key: str, user_id: Optional[int] = None):
     db_sess = database.create_session()
 
     if not check_session(db_sess, session_key):
@@ -148,7 +148,7 @@ async def list_offers(  user_id: Optional[int] = None, session_key: str = Cookie
 
 
 @app.get("/battles/recommended", response_model=List[schemas.Offer])
-async def list_offers(session_key: str = Cookie(None)):
+async def list_offers(session_key: str):
     db_sess = database.create_session()
 
     if not check_session(db_sess, session_key):
@@ -164,7 +164,7 @@ async def list_offers(session_key: str = Cookie(None)):
 
 # Endpoint from old repo GameBack
 @app.get('/battles/accepts', response_model = List[schemas.Accept])
-def accepts_list(offer_id: int, session_key: str = Cookie(None)):
+def accepts_list(offer_id: int, session_key: str):
     db_sess = database.create_session()
 
     if not check_session(db_sess, session_key):
@@ -174,7 +174,7 @@ def accepts_list(offer_id: int, session_key: str = Cookie(None)):
 
 
 @app.post("/battles/accept", response_model=schemas.Accept)
-async def accept_offer(accept_json: schemas.Accept, response: Response, session_key: str = Cookie(None)):
+async def accept_offer(accept_json: schemas.Accept, response: Response, session_key: str):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -194,7 +194,7 @@ async def accept_offer(accept_json: schemas.Accept, response: Response, session_
 
 
 @app.get("/battles/{battle_id}", response_model=schemas.Battle)
-async def get_battle(battle_id: int, session_key: str = Cookie(None)):
+async def get_battle(battle_id: int, session_key: str):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -203,7 +203,7 @@ async def get_battle(battle_id: int, session_key: str = Cookie(None)):
 
 
 @app.post("/battles/start", response_model=schemas.Battle)
-async def start_battle(battle_json: schemas.Battle, response: Response, session_key: str = Cookie(None)):
+async def start_battle(battle_json: schemas.Battle, response: Response, session_key: str):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -233,7 +233,7 @@ async def start_battle(battle_json: schemas.Battle, response: Response, session_
 
 
 @app.post("/battles/move", response_model=schemas.Move)
-async def move_battle(move_json: schemas.Move, response: Response, session_key: str = Cookie(None)):
+async def move_battle(move_json: schemas.Move, response: Response, session_key: str):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -310,7 +310,7 @@ async def move_battle(move_json: schemas.Move, response: Response, session_key: 
 
 
 @app.post("/battles/log", response_model=List[schemas.Round])
-async def get_battle_log(json: schemas.BattleId, session_key: str = Cookie(None)):
+async def get_battle_log(json: schemas.BattleId, session_key: str):
 
 
     db_sess = database.create_session()
