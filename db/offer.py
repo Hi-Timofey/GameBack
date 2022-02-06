@@ -1,6 +1,8 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
 
+from typing import List
+from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
 from .database import SqlAlchemyBase
 
@@ -15,3 +17,9 @@ class Offer(SqlAlchemyBase):
     nft_id = sa.Column(sa.Integer)
 
     accepts = orm.relation("Accept", back_populates='offer')
+
+PydanticOffer = sqlalchemy_to_pydantic(Offer)
+
+class PydanticOffers:
+    offers: List[PydanticOffer]
+

@@ -1,4 +1,5 @@
 import socketio
+import json
 import uvicorn
 from typing import List, Union, Optional
 from sqlalchemy.orm import Session
@@ -19,7 +20,7 @@ from db.session_keys import SessionKey
 from db.round import Round
 from db.move import Move, Choice
 from db.accept import Accept
-from db.offer import Offer
+from db.offer import Offer, PydanticOffer, PydanticOffers
 from db.battle import Battle
 
 # Client states possible
@@ -39,7 +40,7 @@ class Client:
 # Client connection data
 clients = {}
 
-sio = socketio.AsyncServer()
+sio = socketio.AsyncServer(async_mode='sanic')
 
 # Connect and disconnect handlers
 @sio.event
@@ -71,9 +72,49 @@ async def verify_signature(sid, data):
         sio.emit("verification_error", "Signature address recovered doesn't match the client address")
         sio.disconnect(sid)
 
+@sio.event
+async def get_battles_list(sid, data):
+    if clients[sid].state == ClientState.logging_in:
+        sio.emit("verification_error", "You are not logged in")
+        sio.disconnect(sid)
+
+    db_sess = database.create_session()
+    if data['user_id']:
+        offers = db_sess.query(Offer).filter(Offer.user_id == data['user_id']).all()
+    else:
+        offers = db_sess.query(Offer).all()
+
+    pydantic_offers = PydanticOffers.from_orm(offers)
+    offers_json = pydantic_offers.json()
+
+
+    sio.emit("battles_list", offers_json)
+    sio.disconnect(sid)
+
+@sio.event
+async def create_battle_offer(sid, data):
+    if clients[sid].state == ClientState.logging_in:
+        sio.emit("verification_error", "You are not logged in")
+        sio.disconnect(sid)
+
+    db_sess = database.create_session()
+
+    offer_db = Offer()
+
+    offer_db.user_id = data['user_id']
+    offer_db.nft_id = data['nft_id']
+
+    db_sess.add(offer_db)
+    db_sess.commit()
+
+    json_offer = PydanticOffer.from_orm(offer_db)
+
+    sio.emit("created_battle", json_offer)
+    sio.disconnect(sid)
+
+
+
 if __name__ == '__main__':
-    app = Sanic()
+    app = Sanic(name='GameBack')
     sio.attach(app)
-    app.run('0.0.0.0', 80)
-
-
+    app.run('0.0.0.0', 8080)
