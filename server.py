@@ -24,8 +24,6 @@ from db.offer import Offer, PydanticOffer, PydanticOffers
 from db.battle import Battle, PydanticBattle
 
 # For checking if correct data passed to function
-
-
 def check_passed_data(dic: dict, *names):
     for name in names:
         if name not in dic:
@@ -34,16 +32,12 @@ def check_passed_data(dic: dict, *names):
 
 
 # Client states possible
-
-
 class ClientState(Enum):
     logging_in = 1
     in_menu = 2
     in_battle = 3
 
 # Client data class
-
-
 @dataclass
 class Client:
     session_key: str
@@ -187,7 +181,7 @@ async def accept_offer(sid, data):
     pydantic_accept = PydanticAccept.from_orm(accept)
     dict_accept = pydantic_accept.dict()
 
-    sio.emit("offer_accept", json.dumps(dict_accept))
+    sio.emit("added_accept_to_battle", json.dumps(dict_accept))
     sio.disconnect(sid)
 
 
@@ -250,8 +244,10 @@ async def start_battle(sid, data):
     pydantic_battle = PydanticBattle.from_orm(battle)
     dict_battle = pydantic_battle.dict()
 
-    sio.emit("created_battle", json.dumps(dict_battle))
+    sio.emit("started_battle", json.dumps(dict_battle))
     sio.disconnect(sid)
+
+
 
 
 if __name__ == '__main__':
