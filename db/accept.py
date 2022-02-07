@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
+from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
 from .database import SqlAlchemyBase
 
@@ -14,3 +15,8 @@ class Accept(SqlAlchemyBase):
 
     offer_id = sa.Column(sa.Integer, sa.ForeignKey("offers.id"))
     offer = orm.relationship("Offer", back_populates="accepts")
+
+PydanticAccept = sqlalchemy_to_pydantic(Accept)
+
+class PydanticAccepts:
+    accepts: List[PydanticAccept]

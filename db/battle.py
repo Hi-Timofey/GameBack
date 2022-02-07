@@ -1,6 +1,7 @@
-
 import sqlalchemy as sa
 from sqlalchemy import orm
+
+from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
 from .database import SqlAlchemyBase
 
@@ -22,3 +23,7 @@ class Battle(SqlAlchemyBase):
 
     log =  orm.relationship("Round", back_populates='battle')
 
+PydanticBattle = sqlalchemy_to_pydantic(Battle)
+
+class PydanticBattles:
+    battles: List[PydanticBattle]
