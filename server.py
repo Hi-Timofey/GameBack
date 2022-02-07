@@ -244,6 +244,9 @@ async def start_battle(sid, data):
     db_sess.add(battle)
     db_sess.commit()
 
+    clients[sid].state = ClientState.in_battle
+    clients[sid].current_battle = battle.id
+
     pydantic_battle = PydanticBattle.from_orm(battle)
     dict_battle = pydantic_battle.dict()
 
