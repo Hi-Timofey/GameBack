@@ -22,7 +22,4 @@ class Move(SqlAlchemyBase):
     round_id = sa.Column(sa.Integer, sa.ForeignKey("rounds.id"))
     round = orm.relationship("Round", back_populates="moves")
 
-    # TODO: Enum it
     choice = sa.Column(Enum(Choice))
-
-    # round = sa.Column(sa.Integer)

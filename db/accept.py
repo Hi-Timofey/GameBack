@@ -1,9 +1,7 @@
 import sqlalchemy as sa
+from typing import List
 from sqlalchemy import orm
-from pydantic_sqlalchemy import sqlalchemy_to_pydantic
-
 from .database import SqlAlchemyBase
-
 
 class Accept(SqlAlchemyBase):
     __tablename__ = 'accepts'
@@ -13,10 +11,6 @@ class Accept(SqlAlchemyBase):
     user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"))
     nft_id = sa.Column(sa.Integer)
 
-    offer_id = sa.Column(sa.Integer, sa.ForeignKey("offers.id"))
-    offer = orm.relationship("Offer", back_populates="accepts")
+    battle_id = sa.Column(sa.Integer, sa.ForeignKey("battles.id"))
+    battle = orm.relationship("Battle")
 
-PydanticAccept = sqlalchemy_to_pydantic(Accept)
-
-class PydanticAccepts:
-    accepts: List[PydanticAccept]

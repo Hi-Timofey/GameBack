@@ -1,29 +1,26 @@
 import sqlalchemy as sa
-from sqlalchemy import orm
-
-from pydantic_sqlalchemy import sqlalchemy_to_pydantic
-
+from typing import List
+from sqlalchemy import orm, Enum
+from enum import IntEnum
 from .database import SqlAlchemyBase
+
+
+class BattleState(IntEnum):
+    listed = 1
+    in_battle = 2
+    ended = 3
 
 
 class Battle(SqlAlchemyBase):
     __tablename__ = 'battles'
-
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"))
+    nft_id = sa.Column(sa.Integer)
 
-    offer_id = sa.Column(sa.Integer, sa.ForeignKey("offers.id"))
+    accepts = orm.relationship("Accept")
+    accepted_id = sa.Column(sa.Integer)
 
-    offer = orm.relationship("Offer")
+    log = orm.relationship("Round", back_populates='battle')
+    battle_state = sa.Column(Enum(BattleState))
 
-    accept_id = sa.Column(sa.Integer, sa.ForeignKey("accepts.id"))
-    accept = orm.relationship("Accept")
 
-    # first_player_id = sa.Column(sa.Integer, sa.ForeignKey("offers.user_id"))
-    # second_player_id = sa.Column(sa.Integer, sa.ForeignKey("accepts.user_id"))
-
-    log =  orm.relationship("Round", back_populates='battle')
-
-PydanticBattle = sqlalchemy_to_pydantic(Battle)
-
-class PydanticBattles:
-    battles: List[PydanticBattle]
