@@ -1,5 +1,5 @@
 uvicorn
 pydantic
-socketio
+python-socketio
 sanic
 web3
