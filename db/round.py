@@ -10,6 +10,7 @@ class Round(SqlAlchemyBase):
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
     round_number = sa.Column(sa.Integer)
     winner_user_id = sa.Column(sa.Integer)
+    winner_sid = sa.Column(sa.String)
 
     battle_id = sa.Column(sa.Integer, sa.ForeignKey("battles.id"))
     battle = orm.relationship("Battle")

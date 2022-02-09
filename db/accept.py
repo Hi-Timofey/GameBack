@@ -12,5 +12,4 @@ class Accept(SqlAlchemyBase):
     nft_id = sa.Column(sa.Integer)
 
     battle_id = sa.Column(sa.Integer, sa.ForeignKey("battles.id"))
-    battle = orm.relationship("Battle")
-
+    battle = orm.relationship("Battle", back_populates='accepts')

@@ -17,10 +17,8 @@ class Battle(SqlAlchemyBase):
     user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"))
     nft_id = sa.Column(sa.Integer)
 
-    accepts = orm.relationship("Accept")
+    accepts = orm.relationship("Accept", back_populates='battle')
     accepted_id = sa.Column(sa.Integer)
 
     log = orm.relationship("Round", back_populates='battle')
     battle_state = sa.Column(Enum(BattleState))
-
-

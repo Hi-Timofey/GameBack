@@ -13,3 +13,5 @@ from .battle import *
 
 PydanticAccept = sqlalchemy_to_pydantic(Accept)
 PydanticBattle = sqlalchemy_to_pydantic(Battle)
+PydanticMove = sqlalchemy_to_pydantic(Move)
+PydanticRound = sqlalchemy_to_pydantic(Round)

@@ -1,15 +1,18 @@
+# -*- coding: utf-8 -*-
 import socketio
 from socketio.exceptions import ConnectionRefusedError
-import json
+from sanic import Sanic
 import uvicorn
+
+import json
 from typing import List, Union, Optional
-from sqlalchemy.orm import Session
+from enum import Enum
+from dataclasses import dataclass
+
+# web3
 import web3
 from web3 import Web3
 from eth_account.messages import encode_defunct
-from enum import Enum
-from dataclasses import dataclass
-from sanic import Sanic
 
 # Randomness modules
 import uuid
@@ -37,8 +40,6 @@ class ClientState(Enum):
     in_battle = 3
 
 # Client data class
-
-
 @dataclass
 class Client:
     sid: str
@@ -50,6 +51,7 @@ class Client:
 
 # Client connection data
 clients = {}
+
 # Memory battlers sids
 battles = {}
 accepts = {}
@@ -90,6 +92,7 @@ async def verify_signature(sid, data):
 
     if clients[sid].address == account_recovered:
         clients[sid].state = ClientState.in_menu
+        await sio.emit("verification_completed", clients[sid].session_key)
     else:
         await sio.emit(
             "verification_error",
@@ -110,10 +113,6 @@ async def get_battles_list(sid, data):
     else:
         battles = db_sess.query(Battle).all()
 
-    if battles == []:
-        await sio.emit("battles_list", json.dumps(battles), room=sid)
-        return
-
     dict_battles = []
     for battle in battles:
         pydantic_battle = PydanticBattle.from_orm(battle)
@@ -130,7 +129,7 @@ async def create_battle_offer(sid, data):
 
     if not check_passed_data(data, 'user_id', 'nft_id'):
         await sio.emit("wrong_input", "You need to pass 'user_id' and 'nft_id'", room=sid)
-        sio.disconnect(sid)
+        return
 
     db_sess = database.create_session()
 
@@ -166,10 +165,6 @@ async def get_recommended_battles(sid):
     else:
         recommended_battles = all_offers
 
-    if recommended_battles == []:
-        await sio.emit("recommended_battles", json.dumps(recommended_battles), room=sid)
-        return
-
     dict_battles = []
     for battle in recommended_battles:
         pydantic_battle = PydanticBattle.from_orm(battle)
@@ -187,6 +182,7 @@ async def accept_offer(sid, data):
         await sio.emit(
             "wrong_input",
             "You need to pass 'user_id', 'battle_id' and 'nft_id'", room=sid)
+        return
 
     accept = Accept()
     accept.user_id = data['user_id']
@@ -212,16 +208,12 @@ async def accepts_list(sid, data):
 
     if not check_passed_data(data, 'battle_id'):
         await sio.emit("wrong_input", "You need to pass 'battle_id'", room=sid)
-        sio.disconnect(sid)
+        return
 
     db_sess = database.create_session()
 
     accepts = db_sess.query(Accept).filter(
         Accept.battle_id == data['battle_id']).all()
-
-    if accepts == []:
-        await sio.emit("accepts", json.dumps([]), room=sid)
-        return
 
     dict_accepts = []
     for accept in accepts:
@@ -238,7 +230,7 @@ async def start_battle(sid, data):
 
     if not check_passed_data(data, 'battle_id', 'accept_id'):
         await sio.emit("wrong_input", "You need to pass 'battle_id' and 'accept_id'", room=sid)
-        sio.disconnect(sid)
+        return
 
     db_sess = database.create_session()
 
@@ -263,7 +255,6 @@ async def start_battle(sid, data):
         return
 
     # Commiting that battle started and creator picked opponent
-    battle = Battle()
     battle.battle_state = BattleState.in_battle
     battle.accepted_id = accept.id
     db_sess.add(battle)
@@ -275,7 +266,7 @@ async def start_battle(sid, data):
     clients[accept_creator_sid].state = ClientState.in_battle
     clients[accept_creator_sid].current_battle = battle.id
 
-    # Saving in battle info about acceptor
+    # Saving info about acceptor in battle
     battle[battle.id]['acceptor'] = accept_creator_sid
 
     # Returning information about created battle (DB)
@@ -303,15 +294,14 @@ async def make_move(sid, data):
     if battle is None:
         await sio.emit("wrong_input", "No such battle", room=sid)
         return
+    if battle.battle_state == BattleState.listed:
+        await sio.emit("wrong_input", "Battled not started", room=sid)
+        return
 
     # Getting info about battle and both players
     battle_info = battles[battle.id]
     first_user_sid = battle_info['creator']
     second_user_sid = battle_info['acceptor']
-
-    if first_user_sid == second_user_sid:
-        await sio.emit("wrong_input", "Can not beat yourself", room=sid)
-        return
 
     if not (first_user_sid == sid or second_user_sid == sid):
         await sio.emit("wrong_input", "Do not participate in this battle", room=sid)
@@ -320,18 +310,22 @@ async def make_move(sid, data):
     # Getting local logs and trying to get round if exists
     log_of_battle = battle[battle.id]['log']
     round_of_battle = None
+    round_index = -1
 
+    # Local storage not empty - searching round by number
     if log_of_battle != []:
-        # Local storage not empty - seaching round by number
         for round in log_of_battle:
             if round.round_number == data['round']:
                 round_of_battle = round
+                is_round_new = False
+                round_index = log_of_battle.index(round)
 
     # If no round in local logs - creating round
     if round_of_battle is None:
         round_of_battle = Round()
         round_of_battle.round_number = data['round']
         round_of_battle.battle = battle
+        is_round_new = True
 
     move = Move()
     move.user_id = data['user_id']
@@ -340,10 +334,12 @@ async def make_move(sid, data):
     # Adding move to round
     round_of_battle.moves.append(move)
 
-    # Check if the opponent has made a move
+    # Check if enough moves
     if len(round_of_battle.moves) == 2:
-        player1 = round_of_battle.moves[0]
-        player2 = round_of_battle.moves[1]
+
+        # Player2 is a player who made last move so his sid is in "sid" var
+        player1 = round_of_battle.moves[0]  # != sid
+        player2 = round_of_battle.moves[1]  # sid
 
         # Game logic
         if player1.choice == player2.choice:
@@ -365,15 +361,60 @@ async def make_move(sid, data):
             else:
                 round_of_battle.winner_user_id = player2.user_id
 
-    # After checking if we had winner - adding round with moves to local log
-    battles[battle.id]['log'].append(round_of_battle)
-    await sio.emit("maked_move", json.dumps(dict_battle), room=sid)
-
-    # TODO: Sending both players event about move. need to rework (?)
-    if sid == first_user_sid:
-        await sio.emit("opponent_maked_move", json.dumps(dict_battle), room=second_user_sid)
+    # Guessing winner SID from user_id
+    # TODO Simplify
+    if round_of_battle.winner_user_id == player2.user_id:
+        round_of_battle.winner_sid = sid
     else:
-        await sio.emit("opponent_maked_move", json.dumps(dict_battle), room=first_user_sid)
+        if sid == first_user_id:
+            round_of_battle.winner_sid = second_user_sid
+        else:
+            round_of_battle.winner_sid = first_user_sid
+
+    # After checking if we had winner - adding round with moves to local log
+    # TODO
+    battles[battle.id]['log'][round_index] = round_of_battle
+
+    pydantic_move = PydanticMove.from_orm(move)
+    dict_move = pydantic_move.dict()
+
+    await sio.emit("maked_move", json.dumps(dict_move), room=sid)
+
+    # Sending both players event about move.
+    if sid == first_user_sid:
+        await sio.emit("opponent_maked_move", json.dumps(dict_move), room=second_user_sid)
+    else:
+        await sio.emit("opponent_maked_move", json.dumps(dict_move), room=first_user_sid)
+
+
+@sio.event
+async def get_battle_log(sid, data):
+    # Getting id of battle
+    # Returning local storage of rounds
+    if clients[sid].state == ClientState.logging_in:
+        raise ConnectionRefusedError('authentication failed')
+
+    if not check_passed_data(data, 'battle_id'):
+        await sio.emit("wrong_input", "You need to pass 'battle_id'", room=sid)
+        return
+
+    db_sess = database.create_session()
+
+    battle_id = data['battle_id']
+    battle = db_sess.query(Battle).filter(Battle.id == battle_id).first()
+
+    if battle.log == []:
+        battle_log = battles[battle.id]['log']
+    else:
+        battle_log = battle.log
+
+    dict_log = []
+    for round in battle_log:
+        pydantic_round = PydanticRound.from_orm(round)
+        dict_log.append(pydantic_round.dict())
+
+    # TODO: Returning winner_user_id=NULL on not finished round
+    await sio.emit("battle_log", json.dumps(dict_log), room=sid)
 
 
 if __name__ == '__main__':
