@@ -7,9 +7,9 @@ from .database import SqlAlchemyBase
 
 
 class Choice(IntEnum):
-    rock = 1
-    paper = 2
-    scissors = 3
+    attack = 1
+    block = 2
+    trick = 3
 
 
 class Move(SqlAlchemyBase):

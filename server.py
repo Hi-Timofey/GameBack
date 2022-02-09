@@ -23,7 +23,8 @@ from db import *
 
 
 def check_passed_data(dic: dict, *names):
-    ''' For checking if correct data passed in event
+    '''
+    For checking if correct data passed in event
     dic - pass data from event
     names - which args must be in data
     '''
@@ -143,7 +144,7 @@ async def create_battle_offer(sid, data):
     db_sess.commit()
 
     # Saving creator of the battle ( access by battle_id)
-    battles[battle.id] = {'creator': client[sid],
+    battles[battle.id] = {'creator': clients[sid],
                           "log": [], "state": BattleState.listed}
 
     pydantic_battle = PydanticBattle.from_orm(battle)
@@ -168,15 +169,17 @@ async def get_recommended_battles(sid):
     dict_battles = []
     for battle in recommended_battles:
         pydantic_battle = PydanticBattle.from_orm(battle)
-        dict_battle.append(pydantic_battle.dict())
+        dict_battles.append(pydantic_battle.dict())
 
-    await sio.emit("recommended_battles", json.dumps(dict_battle), room=sid)
+    await sio.emit("recommended_battles", json.dumps(dict_battles), room=sid)
 
 
 @sio.event
 async def accept_offer(sid, data):
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
+
+    db_sess = database.create_session()
 
     if not check_passed_data(data, 'user_id', 'nft_id', 'battle_id'):
         await sio.emit(
@@ -193,7 +196,7 @@ async def accept_offer(sid, data):
     db_sess.commit()
 
     # Saving acceptor (access by accept_id)
-    accepts[accept.id] = {"creator": client["sid"]}
+    accepts[accept.id] = {"creator": clients[sid]}
 
     pydantic_accept = PydanticAccept.from_orm(accept)
     dict_accept = pydantic_accept.dict()
@@ -295,7 +298,7 @@ async def make_move(sid, data):
         await sio.emit("wrong_input", "No such battle", room=sid)
         return
     if battle.battle_state == BattleState.listed:
-        await sio.emit("wrong_input", "Battled not started", room=sid)
+        await sio.emit("wrong_input", "Battle not started", room=sid)
         return
 
     # Getting info about battle and both players
@@ -366,7 +369,7 @@ async def make_move(sid, data):
     if round_of_battle.winner_user_id == player2.user_id:
         round_of_battle.winner_sid = sid
     else:
-        if sid == first_user_id:
+        if sid == first_user_sid:
             round_of_battle.winner_sid = second_user_sid
         else:
             round_of_battle.winner_sid = first_user_sid
