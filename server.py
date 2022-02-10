@@ -58,7 +58,7 @@ battles = {}
 accepts = {}
 
 database.global_init_sqlite('db.sqlite')
-sio = socketio.AsyncServer(async_mode='sanic')
+sio = socketio.AsyncServer(async_mode='sanic', cors_allowed_origins='*')
 
 # Connect and disconnect handlers
 

@@ -3,3 +3,4 @@ pydantic
 python-socketio
 sanic
 web3
+pydantic_sqlalchemy
