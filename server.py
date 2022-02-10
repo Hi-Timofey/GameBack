@@ -75,8 +75,6 @@ async def connect(sid, environ, auth):
 async def disconnect(sid):
     print(f'Client {sid} disconnected')
     del clients[sid]
-    await sio.emit("disconnected")
-    sio.disconnect(sid)
 
 
 # Signature auth event
@@ -89,7 +87,8 @@ async def verify_signature(sid, data):
             signature=str(data['signature']))
     except Exception as ex:
         await sio.emit("verification_error", str(ex))
-        sio.disconnect(sid)
+        await sio.disconnect(sid)
+        return
 
     if clients[sid].address == account_recovered:
         clients[sid].state = ClientState.in_menu
@@ -98,7 +97,8 @@ async def verify_signature(sid, data):
         await sio.emit(
             "verification_error",
             "Signature address recovered doesn't match the client address")
-        sio.disconnect(sid)
+        await sio.disconnect(sid)
+        return
 
 
 # Getting list of all battles
