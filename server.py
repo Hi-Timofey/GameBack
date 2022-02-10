@@ -82,7 +82,7 @@ async def disconnect(sid):
 async def verify_signature(sid, data):
     try:
         w3 = Web3()
-        clients[sid].address = data['address']
+        clients[sid].address = Web3.toChecksumAddress(data['address'])
         account_recovered = w3.eth.account.recover_message(
             encode_defunct(text=clients[sid].session_key),
             signature=str(data['signature']))
