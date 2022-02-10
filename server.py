@@ -66,7 +66,7 @@ sio = socketio.AsyncServer(async_mode='sanic', cors_allowed_origins='*')
 @sio.event
 async def connect(sid, environ, auth):
     print(f'Client {sid} connected')
-    session_key = uuid.uuid4()
+    session_key = str(uuid.uuid4())
     clients[sid] = Client(sid, session_key)
     await sio.emit("session_key", {"session_key": str(session_key)}, room=sid)
 
