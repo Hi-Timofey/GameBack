@@ -81,8 +81,9 @@ async def disconnect(sid):
 @sio.event
 async def verify_signature(sid, data):
     try:
+        w3 = Web3()
         clients[sid].address = data['address']
-        account_recovered = Web3.eth.account.recover_message(
+        account_recovered = w3.eth.account.recover_message(
             encode_defunct(text=clients[sid].session_key),
             signature=str(data['signature']))
     except Exception as ex:
