@@ -86,19 +86,14 @@ async def verify_signature(sid, data):
             encode_defunct(text=clients[sid].session_key),
             signature=str(data['signature']))
     except Exception as ex:
-        await sio.emit("verification_error", str(ex))
-        await sio.disconnect(sid)
-        return
+        return "verification_error", str(ex)
 
     if clients[sid].address == account_recovered:
         clients[sid].state = ClientState.in_menu
-        await sio.emit("verification_completed", clients[sid].session_key)
+        return "verification_completed", clients[sid].session_key
     else:
-        await sio.emit(
-            "verification_error",
-            "Signature address recovered doesn't match the client address")
-        await sio.disconnect(sid)
-        return
+        return ("verification_error",
+                "Signature address recovered doesn't match the client address")
 
 
 # Getting list of all battles
