@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-7 -*-
 import socketio
 from socketio.exceptions import ConnectionRefusedError
 from sanic import Sanic
@@ -116,7 +116,7 @@ async def get_battles_list(sid, data):
         dict_battle = pydantic_battle.dict()
         dict_battles.append(dict_battle)
 
-    await sio.emit("battles_list", json.dumps(dict_battles), room=sid)
+    return json.dumps(dict_battles)
 
 
 @sio.event
@@ -124,16 +124,16 @@ async def create_battle_offer(sid, data):
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
-    if not check_passed_data(data, 'user_id', 'nft_id'):
-        await sio.emit("wrong_input", "You need to pass 'user_id' and 'nft_id'", room=sid)
-        return
+    if not check_passed_data(data, 'nft_type', 'nft_id', 'bet'):
+        return ("wrong_input", "You need to pass 'bet', 'nft_type' and 'nft_id'")
 
     db_sess = database.create_session()
 
     battle = Battle()
 
-    battle.user_id = data['user_id']
     battle.nft_id = data['nft_id']
+    battle.nft_type = data['nft_type']
+    battle.bet = data['bet']
     battle.battle_state = BattleState.listed
 
     db_sess.add(battle)
@@ -146,7 +146,7 @@ async def create_battle_offer(sid, data):
     pydantic_battle = PydanticBattle.from_orm(battle)
     dict_battle = pydantic_battle.dict()
 
-    await sio.emit("created_battle", json.dumps(dict_battle), room=sid)
+    return json.dumps(dict_battle)
 
 
 @sio.event
@@ -167,7 +167,7 @@ async def get_recommended_battles(sid):
         pydantic_battle = PydanticBattle.from_orm(battle)
         dict_battles.append(pydantic_battle.dict())
 
-    await sio.emit("recommended_battles", json.dumps(dict_battles), room=sid)
+    return json.dumps(dict_battles)
 
 
 @sio.event
@@ -177,15 +177,14 @@ async def accept_offer(sid, data):
 
     db_sess = database.create_session()
 
-    if not check_passed_data(data, 'user_id', 'nft_id', 'battle_id'):
-        await sio.emit(
+    if not check_passed_data(data, 'nft_id','nft_type', 'battle_id'):
+        return (
             "wrong_input",
-            "You need to pass 'user_id', 'battle_id' and 'nft_id'", room=sid)
-        return
+            "You need to pass 'nft_type','nft_id' and 'battle_id'")
 
     accept = Accept()
-    accept.user_id = data['user_id']
     accept.nft_id = data['nft_id']
+    accept.nft_type = data['nft_type']
     accept.battle_id = data['battle_id']
 
     db_sess.add(accept)
@@ -197,7 +196,7 @@ async def accept_offer(sid, data):
     pydantic_accept = PydanticAccept.from_orm(accept)
     dict_accept = pydantic_accept.dict()
 
-    await sio.emit("added_accept_to_battle", json.dumps(dict_accept), room=sid)
+    return json.dumps(dict_accept)
 
 
 @sio.event
@@ -206,8 +205,7 @@ async def accepts_list(sid, data):
         raise ConnectionRefusedError('authentication failed')
 
     if not check_passed_data(data, 'battle_id'):
-        await sio.emit("wrong_input", "You need to pass 'battle_id'", room=sid)
-        return
+        return ("wrong_input", "You need to pass 'battle_id'")
 
     db_sess = database.create_session()
 
@@ -219,7 +217,7 @@ async def accepts_list(sid, data):
         pydantic_accept = PydanticAccept.from_orm(accept)
         dict_accepts.append(pydantic_accept.dict())
 
-    await sio.emit("accept_list", json.dumps(dict_accepts), room=sid)
+    return json.dumps(dict_accepts)
 
 
 @sio.event
@@ -228,16 +226,14 @@ async def start_battle(sid, data):
         raise ConnectionRefusedError('authentication failed')
 
     if not check_passed_data(data, 'battle_id', 'accept_id'):
-        await sio.emit("wrong_input", "You need to pass 'battle_id' and 'accept_id'", room=sid)
-        return
+        return ("wrong_input", "You need to pass 'battle_id' and 'accept_id'")
 
     db_sess = database.create_session()
 
     # Check if battle already started
     if db_sess.query(Battle).filter(
             Battle.id == data['battle_id']).first().state == BattleState.in_battle:
-        await sio.emit("wrong_input", "Battle already started", room=sid)
-        return
+        return ("wrong_input", "Battle already started")
 
     # getting from db all info
     battle = db_sess.query(Battle).filter(
@@ -250,8 +246,7 @@ async def start_battle(sid, data):
     accept_creator_sid = battles[accept.id]['creator']['sid']
 
     if battle.user_id == accept.user_id:
-        await sio.emit("wrong_input", "User can't fight himself", room=sid)
-        return
+        return ("wrong_input", "User can't fight himself")
 
     # Commiting that battle started and creator picked opponent
     battle.battle_state = BattleState.in_battle
@@ -274,6 +269,7 @@ async def start_battle(sid, data):
 
     await sio.emit("started_battle", json.dumps(dict_battle), room=battle_creator_sid)
     await sio.emit("started_battle", json.dumps(dict_battle), room=accept_creator_sid)
+    return json.dumps(dict_battle)
 
 
 @sio.event

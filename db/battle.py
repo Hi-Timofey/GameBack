@@ -4,6 +4,7 @@ from sqlalchemy import orm, Enum
 from enum import IntEnum
 from .database import SqlAlchemyBase
 from .chains import Chain
+from .nft import NFTType
 
 
 class BattleState(IntEnum):
@@ -15,9 +16,9 @@ class BattleState(IntEnum):
 class Battle(SqlAlchemyBase):
     __tablename__ = 'battles'
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey("users.id"))
+
     nft_id = sa.Column(sa.Integer)
-    nft_chain = sa.Column(Enum(Chain))
+    nft_type = sa.Column(Enum(NFTType))
 
     accepts = orm.relationship("Accept", back_populates='battle')
     accepted_id = sa.Column(sa.Integer)
