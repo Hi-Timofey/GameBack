@@ -104,9 +104,9 @@ async def get_battles_list(sid, data):
         raise ConnectionRefusedError('authentication failed')
 
     db_sess = database.create_session()
-    if data['user_id']:
+    if data['address']:
         battles = db_sess.query(Battle).filter(
-            Battle.user_id == data['user_id']).all()
+            Battle.owner_address == data['address']).all()
     else:
         battles = db_sess.query(Battle).all()
 
@@ -130,7 +130,7 @@ async def create_battle_offer(sid, data):
     db_sess = database.create_session()
 
     battle = Battle()
-
+    battle.owner_address = clients[sid].address
     battle.nft_id = data['nft_id']
     battle.nft_type = data['nft_type']
     battle.bet = data['bet']
@@ -144,7 +144,11 @@ async def create_battle_offer(sid, data):
                           "log": [], "state": BattleState.listed}
 
     pydantic_battle = PydanticBattle.from_orm(battle)
-    dict_battle = pydantic_battle.dict()
+    dict_battle = pydantic_battle.dict(exclude={'owner_address'})
+
+    # Adding hybrid property to response dict - uri
+    # TODO: Make it automatic
+    dict_battle['uri'] = battle.uri
 
     return json.dumps(dict_battle)
 
@@ -183,6 +187,7 @@ async def accept_offer(sid, data):
             "You need to pass 'nft_type','nft_id' and 'battle_id'")
 
     accept = Accept()
+    accept.owner_address = clients[sid].address
     accept.nft_id = data['nft_id']
     accept.nft_type = data['nft_type']
     accept.battle_id = data['battle_id']
@@ -194,7 +199,7 @@ async def accept_offer(sid, data):
     accepts[accept.id] = {"creator": clients[sid]}
 
     pydantic_accept = PydanticAccept.from_orm(accept)
-    dict_accept = pydantic_accept.dict()
+    dict_accept = pydantic_accept.dict(exclude={'owner_address'})
 
     return json.dumps(dict_accept)
 
@@ -245,7 +250,7 @@ async def start_battle(sid, data):
     battle_creator_sid = battles[battle.id]['creator']['sid']
     accept_creator_sid = battles[accept.id]['creator']['sid']
 
-    if battle.user_id == accept.user_id:
+    if battle.owner_address == accept.owner_address:
         return ("wrong_input", "User can't fight himself")
 
     # Commiting that battle started and creator picked opponent
@@ -272,13 +277,14 @@ async def start_battle(sid, data):
     return json.dumps(dict_battle)
 
 
+# TODO: Replacing user_id with address
 @sio.event
 async def make_move(sid, data):
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
-    if not check_passed_data(data, 'user_id', 'round', 'choice', 'battle_id'):
-        await sio.emit("wrong_input", "You need to pass all args", room=sid)
+    if not check_passed_data(data, 'round', 'choice', 'battle_id'):
+        await sio.emit("wrong_input", "You need to pass all args: round, choice, battle_id", room=sid)
         return
 
     db_sess = database.create_session()
