@@ -104,11 +104,11 @@ async def get_battles_list(sid, data):
         raise ConnectionRefusedError('authentication failed')
 
     db_sess = database.create_session()
-    if data['address']:
+    if 'address' in data.keys():
         battles = db_sess.query(Battle).filter(
             Battle.owner_address == data['address']).all()
     else:
-        battles = db_sess.query(Battle).all()
+        return ('wrong_input', 'Address of user not passed')
 
     dict_battles = []
     for battle in battles:
