@@ -80,6 +80,7 @@ async def disconnect(sid):
 # Signature auth event
 @sio.event
 async def verify_signature(sid, data):
+    print(f'Client {sid} verifying signature')
     try:
         w3 = Web3()
         clients[sid].address = Web3.toChecksumAddress(data['address'])
@@ -100,6 +101,7 @@ async def verify_signature(sid, data):
 # Getting list of all battles
 @sio.event
 async def get_battles_list(sid, data):
+    print(f'Client {sid} getting battles list')
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
@@ -121,6 +123,7 @@ async def get_battles_list(sid, data):
 
 @sio.event
 async def create_battle_offer(sid, data):
+    print(f'Client {sid} creating battle offer')
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
@@ -155,6 +158,8 @@ async def create_battle_offer(sid, data):
 
 @sio.event
 async def get_recommended_battles(sid):
+    print(f'Client {sid} getting recommended battles')
+
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
@@ -176,6 +181,7 @@ async def get_recommended_battles(sid):
 
 @sio.event
 async def accept_offer(sid, data):
+    print(f'Client {sid} accepting offer')
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
@@ -206,6 +212,7 @@ async def accept_offer(sid, data):
 
 @sio.event
 async def accepts_list(sid, data):
+    print(f'Client {sid} getting accepts list')
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
@@ -227,6 +234,7 @@ async def accepts_list(sid, data):
 
 @sio.event
 async def start_battle(sid, data):
+    print(f'Client {sid} starting battle')
     if clients[sid].state == ClientState.logging_in:
         raise ConnectionRefusedError('authentication failed')
 
