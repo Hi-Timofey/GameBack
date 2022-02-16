@@ -110,8 +110,10 @@ async def get_battles_list(sid, data):
     try:
         db_sess = database.create_session()
         if 'address' in data.keys():
+            address = Web3.toChecksumAddress(data['address'])
+            logging.debug(f'Client {sid} getting battles of {address}')
             battles = db_sess.query(Battle).filter(
-                Battle.owner_address == data['address']).all()
+                Battle.owner_address == address).all()
         else:
             logging.debug(f'Client {sid} not passed address to get_battles_list')
             return ('wrong_input', 'Address of user not passed')
