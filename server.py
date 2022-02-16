@@ -1,6 +1,6 @@
 # -*- coding: utf-7 -*-
 import socketio
-from socketio.exceptions import ConnectionRefusedError
+# from socketio.exceptions import ConnectionRefusedError
 from sanic import Sanic
 import uvicorn
 
@@ -103,7 +103,7 @@ async def verify_signature(sid, data):
 async def get_battles_list(sid, data):
     print(f'Client {sid} getting battles list')
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     db_sess = database.create_session()
     if 'address' in data.keys():
@@ -125,7 +125,7 @@ async def get_battles_list(sid, data):
 async def create_battle_offer(sid, data):
     print(f'Client {sid} creating battle offer')
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     if not check_passed_data(data, 'nft_type', 'nft_id', 'bet'):
         return ("wrong_input", "You need to pass 'bet', 'nft_type' and 'nft_id'")
@@ -159,9 +159,8 @@ async def create_battle_offer(sid, data):
 @sio.event
 async def get_recommended_battles(sid):
     print(f'Client {sid} getting recommended battles')
-
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     db_sess = database.create_session()
 
@@ -183,7 +182,7 @@ async def get_recommended_battles(sid):
 async def accept_offer(sid, data):
     print(f'Client {sid} accepting offer')
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     db_sess = database.create_session()
 
@@ -214,7 +213,7 @@ async def accept_offer(sid, data):
 async def accepts_list(sid, data):
     print(f'Client {sid} getting accepts list')
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     if not check_passed_data(data, 'battle_id'):
         return ("wrong_input", "You need to pass 'battle_id'")
@@ -236,7 +235,7 @@ async def accepts_list(sid, data):
 async def start_battle(sid, data):
     print(f'Client {sid} starting battle')
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     if not check_passed_data(data, 'battle_id', 'accept_id'):
         return ("wrong_input", "You need to pass 'battle_id' and 'accept_id'")
@@ -289,7 +288,7 @@ async def start_battle(sid, data):
 @sio.event
 async def make_move(sid, data):
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     if not check_passed_data(data, 'round', 'choice', 'battle_id'):
         await sio.emit("wrong_input", "You need to pass all args: round, choice, battle_id", room=sid)
@@ -401,7 +400,7 @@ async def get_battle_log(sid, data):
     # Getting id of battle
     # Returning local storage of rounds
     if clients[sid].state == ClientState.logging_in:
-        raise ConnectionRefusedError('authentication failed')
+        return ('authentication_error', 'You need to log in first')
 
     if not check_passed_data(data, 'battle_id'):
         await sio.emit("wrong_input", "You need to pass 'battle_id'", room=sid)
