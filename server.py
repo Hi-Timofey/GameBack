@@ -64,6 +64,8 @@ database.global_init_sqlite('db.sqlite')
 sio = socketio.AsyncServer(async_mode='sanic', cors_allowed_origins='*')
 
 # Connect and disconnect handlers
+
+
 @sio.event
 async def connect(sid, environ):
     logging.info(f'Client {sid} connected')
@@ -115,19 +117,21 @@ async def get_battles_list(sid, data):
             battles = db_sess.query(Battle).filter(
                 Battle.owner_address == address).all()
         else:
-            logging.debug(f'Client {sid} not passed address to get_battles_list')
+            logging.debug(
+                f'Client {sid} not passed address to get_battles_list')
             return ('wrong_input', 'Address of user not passed')
 
         dict_battles = []
         for battle in battles:
             pydantic_battle = PydanticBattle.from_orm(battle)
             dict_battle = pydantic_battle.dict()
+            dict_battle['uri'] = battle.uri
             dict_battles.append(dict_battle)
 
         logging.debug(f'Client {sid} getting battles: {dict_battles}')
         return json.dumps(dict_battles)
     except Exception as e:
-        info.error("Error in get_battles_list:", exc_info=True)
+        logging.error("Error in get_battles_list:", exc_info=True)
 
 
 @sio.event
@@ -184,12 +188,15 @@ async def get_recommended_battles(sid):
         dict_battles = []
         for battle in recommended_battles:
             pydantic_battle = PydanticBattle.from_orm(battle)
-            dict_battles.append(pydantic_battle.dict())
+            dict_battle = pydantic_battle.dict()
+            dict_battle['uri'] = battle.uri
+            dict_battles.append(dict_battle)
 
-        logging.debug(f'Client {sid} getting recommended battles: {dict_battles}')
+        logging.debug(
+            f'Client {sid} getting recommended battles: {dict_battles}')
         return json.dumps(dict_battles)
     except Exception as e:
-        info.error("Error in get_battles_list:", exc_info=True)
+        logging.error("Error in get_battles_list:", exc_info=True)
 
 
 @sio.event
@@ -205,11 +212,20 @@ async def accept_offer(sid, data):
             "wrong_input",
             "You need to pass 'nft_type','nft_id' and 'battle_id'")
 
+    battle = db_sess.query(Battle).filter(Battle.id == data['battle_id']).first()
+    if battle is None:
+        logging.debug(f'Client {sid} accepting not existing battle with id: {data["battle_id"]}')
+        return ("wrong_input", "No such battle")
+
+    if battles[battle.id]["creator"] == client[sid]:
+        logging.debug(f'Client {sid} accepting self created battle')
+        return ("wrong_input", "Can not fight yourself")
+
     accept = Accept()
     accept.owner_address = clients[sid].address
     accept.nft_id = data['nft_id']
     accept.nft_type = data['nft_type']
-    accept.battle_id = data['battle_id']
+    accept.battle = battle
 
     db_sess.add(accept)
     db_sess.commit()
@@ -445,8 +461,8 @@ if __name__ == '__main__':
 
     logging.basicConfig(
         # filename='app.log',
-                    filemode='w',
-                    level=logging.INFO,
-                    format='%(asctime)s | %(levelname)s - %(message)s')
+        filemode='w',
+        level=logging.INFO,
+        format='%(asctime)s | %(levelname)s - %(message)s')
 
     app.run('0.0.0.0', 8080)
