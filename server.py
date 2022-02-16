@@ -1,8 +1,9 @@
 # -*- coding: utf-7 -*-
+
+import logging
+
 import socketio
-# from socketio.exceptions import ConnectionRefusedError
 from sanic import Sanic
-import uvicorn
 
 import json
 from typing import List, Union, Optional
@@ -41,6 +42,8 @@ class ClientState(Enum):
     in_battle = 3
 
 # Client data class
+
+
 @dataclass
 class Client:
     sid: str
@@ -61,11 +64,9 @@ database.global_init_sqlite('db.sqlite')
 sio = socketio.AsyncServer(async_mode='sanic', cors_allowed_origins='*')
 
 # Connect and disconnect handlers
-
-
 @sio.event
-async def connect(sid, environ, auth):
-    print(f'Client {sid} connected')
+async def connect(sid, environ):
+    logging.info(f'Client {sid} connected')
     session_key = str(uuid.uuid4())
     clients[sid] = Client(sid, session_key)
     await sio.emit("session_key", {"session_key": str(session_key)}, room=sid)
@@ -73,14 +74,14 @@ async def connect(sid, environ, auth):
 
 @sio.event
 async def disconnect(sid):
-    print(f'Client {sid} disconnected')
+    logging.info(f'Client {sid} disconnected')
     del clients[sid]
 
 
 # Signature auth event
 @sio.event
 async def verify_signature(sid, data):
-    print(f'Client {sid} verifying signature')
+    logging.info(f'Client {sid} verifying signature')
     try:
         w3 = Web3()
         clients[sid].address = Web3.toChecksumAddress(data['address'])
@@ -101,29 +102,35 @@ async def verify_signature(sid, data):
 # Getting list of all battles
 @sio.event
 async def get_battles_list(sid, data):
-    print(f'Client {sid} getting battles list')
+    logging.info(f'Client {sid} getting battles list')
     if clients[sid].state == ClientState.logging_in:
+        logging.info(f'Client {sid} CONNECTION REFUSED (AUTH)')
         return ('authentication_error', 'You need to log in first')
 
-    db_sess = database.create_session()
-    if 'address' in data.keys():
-        battles = db_sess.query(Battle).filter(
-            Battle.owner_address == data['address']).all()
-    else:
-        return ('wrong_input', 'Address of user not passed')
+    try:
+        db_sess = database.create_session()
+        if 'address' in data.keys():
+            battles = db_sess.query(Battle).filter(
+                Battle.owner_address == data['address']).all()
+        else:
+            logging.debug(f'Client {sid} not passed address to get_battles_list')
+            return ('wrong_input', 'Address of user not passed')
 
-    dict_battles = []
-    for battle in battles:
-        pydantic_battle = PydanticBattle.from_orm(battle)
-        dict_battle = pydantic_battle.dict()
-        dict_battles.append(dict_battle)
+        dict_battles = []
+        for battle in battles:
+            pydantic_battle = PydanticBattle.from_orm(battle)
+            dict_battle = pydantic_battle.dict()
+            dict_battles.append(dict_battle)
 
-    return json.dumps(dict_battles)
+        logging.debug(f'Client {sid} getting battles: {dict_battles}')
+        return json.dumps(dict_battles)
+    except Exception as e:
+        info.error("Error in get_battles_list:", exc_info=True)
 
 
 @sio.event
 async def create_battle_offer(sid, data):
-    print(f'Client {sid} creating battle offer')
+    logging.info(f'Client {sid} creating battle offer')
     if clients[sid].state == ClientState.logging_in:
         return ('authentication_error', 'You need to log in first')
 
@@ -158,35 +165,40 @@ async def create_battle_offer(sid, data):
 
 @sio.event
 async def get_recommended_battles(sid):
-    print(f'Client {sid} getting recommended battles')
+    logging.info(f'Client {sid} getting recommended battles')
     if clients[sid].state == ClientState.logging_in:
+        logging.info(f'Client {sid} CONNECTION REFUSED (AUTH)')
         return ('authentication_error', 'You need to log in first')
 
-    db_sess = database.create_session()
+    try:
+        db_sess = database.create_session()
 
-    all_offers = db_sess.query(Battle).all()
-    if len(all_offers) >= 3:
-        recommended_battles = random.sample(all_offers, k=3)
-    else:
-        recommended_battles = all_offers
+        all_offers = db_sess.query(Battle).all()
+        if len(all_offers) >= 3:
+            recommended_battles = random.sample(all_offers, k=3)
+        else:
+            recommended_battles = all_offers
 
-    dict_battles = []
-    for battle in recommended_battles:
-        pydantic_battle = PydanticBattle.from_orm(battle)
-        dict_battles.append(pydantic_battle.dict())
+        dict_battles = []
+        for battle in recommended_battles:
+            pydantic_battle = PydanticBattle.from_orm(battle)
+            dict_battles.append(pydantic_battle.dict())
 
-    return json.dumps(dict_battles)
+        logging.debug(f'Client {sid} getting recommended battles: {dict_battles}')
+        return json.dumps(dict_battles)
+    except Exception as e:
+        info.error("Error in get_battles_list:", exc_info=True)
 
 
 @sio.event
 async def accept_offer(sid, data):
-    print(f'Client {sid} accepting offer')
+    logging.info(f'Client {sid} accepting offer')
     if clients[sid].state == ClientState.logging_in:
         return ('authentication_error', 'You need to log in first')
 
     db_sess = database.create_session()
 
-    if not check_passed_data(data, 'nft_id','nft_type', 'battle_id'):
+    if not check_passed_data(data, 'nft_id', 'nft_type', 'battle_id'):
         return (
             "wrong_input",
             "You need to pass 'nft_type','nft_id' and 'battle_id'")
@@ -211,7 +223,7 @@ async def accept_offer(sid, data):
 
 @sio.event
 async def accepts_list(sid, data):
-    print(f'Client {sid} getting accepts list')
+    logging.info(f'Client {sid} getting accepts list')
     if clients[sid].state == ClientState.logging_in:
         return ('authentication_error', 'You need to log in first')
 
@@ -233,7 +245,7 @@ async def accepts_list(sid, data):
 
 @sio.event
 async def start_battle(sid, data):
-    print(f'Client {sid} starting battle')
+    logging.info(f'Client {sid} starting battle')
     if clients[sid].state == ClientState.logging_in:
         return ('authentication_error', 'You need to log in first')
 
@@ -428,4 +440,11 @@ async def get_battle_log(sid, data):
 if __name__ == '__main__':
     app = Sanic(name='GameBack')
     sio.attach(app)
+
+    logging.basicConfig(
+        # filename='app.log',
+                    filemode='w',
+                    level=logging.INFO,
+                    format='%(asctime)s | %(levelname)s - %(message)s')
+
     app.run('0.0.0.0', 8080)
