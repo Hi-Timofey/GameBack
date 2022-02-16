@@ -47,8 +47,8 @@ class Battle(SqlAlchemyBase):
         if self.nft_type == NFTType.bot:
             bots = ethereum.eth.contract(BOTS_CONTRACT, abi=NFT_ABI)
             bots_base_uri = bots.functions.tokenURI(0).call()[:-1]
-            return bots_base_uri
+            return bots_base_uri + str(self.nft_id)
         else:
             shrooms = polygon.eth.contract(SHROOMS_CONTRACT, abi=NFT_ABI)
             shrooms_base_uri = shrooms.functions.tokenURI(0).call()[:-1]
-            return shrooms_base_uri
+            return shrooms_base_uri + str(self.nft_id)
