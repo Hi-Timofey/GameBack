@@ -217,7 +217,7 @@ async def accept_offer(sid, data):
         logging.debug(f'Client {sid} accepting not existing battle with id: {data["battle_id"]}')
         return ("wrong_input", "No such battle")
 
-    if battles[battle.id]["creator"] == client[sid]:
+    if battles[battle.id]["creator"] == clients[sid]:
         logging.debug(f'Client {sid} accepting self created battle')
         return ("wrong_input", "Can not fight yourself")
 
@@ -321,8 +321,7 @@ async def make_move(sid, data):
         return ('authentication_error', 'You need to log in first')
 
     if not check_passed_data(data, 'round', 'choice', 'battle_id'):
-        await sio.emit("wrong_input", "You need to pass all args: round, choice, battle_id", room=sid)
-        return
+        return ("wrong_input", "You need to pass all args: round, choice, battle_id")
 
     db_sess = database.create_session()
 
@@ -330,11 +329,9 @@ async def make_move(sid, data):
         Battle.id == data['battle_id']).first()
 
     if battle is None:
-        await sio.emit("wrong_input", "No such battle", room=sid)
-        return
+        return ("wrong_input", "No such battle")
     if battle.battle_state == BattleState.listed:
-        await sio.emit("wrong_input", "Battle not started", room=sid)
-        return
+        return ("wrong_input", "Battle not started")
 
     # Getting info about battle and both players
     battle_info = battles[battle.id]
@@ -342,8 +339,7 @@ async def make_move(sid, data):
     second_user_sid = battle_info['acceptor']
 
     if not (first_user_sid == sid or second_user_sid == sid):
-        await sio.emit("wrong_input", "Do not participate in this battle", room=sid)
-        return
+        return ("wrong_input", "You do not participate in this battle")
 
     # Getting local logs and trying to get round if exists
     log_of_battle = battle[battle.id]['log']
@@ -366,7 +362,7 @@ async def make_move(sid, data):
         is_round_new = True
 
     move = Move()
-    move.user_id = data['user_id']
+    move.owner_address = clients[sid].address
     move.choice = data['choice']
 
     # Adding move to round
@@ -416,13 +412,15 @@ async def make_move(sid, data):
     pydantic_move = PydanticMove.from_orm(move)
     dict_move = pydantic_move.dict()
 
-    await sio.emit("maked_move", json.dumps(dict_move), room=sid)
 
     # Sending both players event about move.
     if sid == first_user_sid:
         await sio.emit("opponent_maked_move", json.dumps(dict_move), room=second_user_sid)
     else:
         await sio.emit("opponent_maked_move", json.dumps(dict_move), room=first_user_sid)
+
+    return json.dumps(dict_move)
+
 
 
 @sio.event
@@ -433,8 +431,7 @@ async def get_battle_log(sid, data):
         return ('authentication_error', 'You need to log in first')
 
     if not check_passed_data(data, 'battle_id'):
-        await sio.emit("wrong_input", "You need to pass 'battle_id'", room=sid)
-        return
+        return ("wrong_input", "You need to pass 'battle_id'")
 
     db_sess = database.create_session()
 
@@ -452,7 +449,7 @@ async def get_battle_log(sid, data):
         dict_log.append(pydantic_round.dict())
 
     # TODO: Returning winner_user_id=NULL on not finished round
-    await sio.emit("battle_log", json.dumps(dict_log), room=sid)
+    return json.dumps(dict_log)
 
 
 if __name__ == '__main__':
