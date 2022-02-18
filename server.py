@@ -57,6 +57,7 @@ class Client:
 clients = {}
 
 # Memory battlers sids
+# BATTLES: 'creator', 'log', 'state'
 battles = {}
 accepts = {}
 
@@ -217,7 +218,7 @@ async def accept_offer(sid, data):
         logging.debug(f'Client {sid} accepting not existing battle with id: {data["battle_id"]}')
         return ("wrong_input", "No such battle")
 
-    if battles[battle.id]["creator"] == clients[sid]:
+    if battle.owner_address == clients[sid].address:
         logging.debug(f'Client {sid} accepting self created battle')
         return ("wrong_input", "Can not fight yourself")
 
