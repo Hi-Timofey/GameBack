@@ -265,7 +265,11 @@ async def accept_offer(sid, data):
     db_sess.commit()
 
     pydantic_accept = PydanticAccept.from_orm(accept)
-    dict_accept = pydantic_accept.dict(exclude={'owner_address'})
+    dict_accept = pydantic_accept.dict()
+
+    dict_accept['uri'] = accept.uri
+    dict_accept['bet'] = battle.bet
+
     await sio.emit("accept_added", json.dumps(dict_accept), room=creator_sid)
     return json.dumps(dict_accept)
 
