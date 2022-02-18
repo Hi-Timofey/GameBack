@@ -78,7 +78,22 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     logging.info(f'Client {sid} disconnected')
+
+    db_sess = database.create_session()
+
+    for battle_id in battles:
+        battle_info = battles[battle_id]
+        if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.listed:
+            battle_db = db_sess.query(Battle).filter(Battle.id == battle_id).first()
+            db_sess.delete(battle_db)
+            db_sess.commit()
+            del battles[battle_id]
+
+        if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.ended:
+            del battles[battle_id]
+
     del clients[sid]
+
 
 
 # Signature auth event
@@ -180,7 +195,7 @@ async def get_recommended_battles(sid):
     try:
         db_sess = database.create_session()
 
-        all_offers = db_sess.query(Battle).all()
+        all_offers = db_sess.query(Battle).filter(Battle.owner_address != clients[sid].address ).all()
         if len(all_offers) >= 3:
             recommended_battles = random.sample(all_offers, k=3)
         else:
@@ -228,16 +243,30 @@ async def accept_offer(sid, data):
     accept.nft_type = data['nft_type']
     accept.battle = battle
 
-    db_sess.add(accept)
-    db_sess.commit()
+
+
+    # TODO: Issue due to disconnected users and not deleted battles, must be
+    # fixed
+    try:
+        creator_sid = battles[battle.id]['creator']['sid']
+    except:
+        owner_address = battle.owner_address
+        creator_sid = None
+        for sid in clients:
+            if clients[sid].address == owner_address:
+                creator_sid = sid
+        if creator_sid is None:
+            return ("error", f"Can not find such battle with id {battle.id}")
 
     # Saving acceptor (access by accept_id)
     accepts[accept.id] = {"creator": clients[sid]}
 
+    db_sess.add(accept)
+    db_sess.commit()
+
     pydantic_accept = PydanticAccept.from_orm(accept)
     dict_accept = pydantic_accept.dict(exclude={'owner_address'})
-
-    await sio.emit("accept_added", json.dumps(dict_accept), room=battles[battle.id]['creator']['sid'])
+    await sio.emit("accept_added", json.dumps(dict_accept), room=creator_sid)
     return json.dumps(dict_accept)
 
 
