@@ -237,6 +237,7 @@ async def accept_offer(sid, data):
     pydantic_accept = PydanticAccept.from_orm(accept)
     dict_accept = pydantic_accept.dict(exclude={'owner_address'})
 
+    await sio.emit("accept_added", json.dumps(dict_accept), room=battles[battle.id]['creator']['sid'])
     return json.dumps(dict_accept)
 
 
