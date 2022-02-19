@@ -309,20 +309,28 @@ async def start_battle(sid, data):
         return ("wrong_input", "You need to pass 'battle_id' and 'accept_id'")
 
     db_sess = database.create_session()
+    # Getting battle and accept from DB
     battle = db_sess.query(Battle).filter(Battle.id == data['battle_id']).first()
-    # Check if battle already started
-    if battle.battle_state == BattleState.in_battle:
-        return ("wrong_input", "Battle already started")
+    if battle is None:
+        return ("wrong_input", "Battle not found")
 
     accept = db_sess.query(Accept).filter(
         Accept.id == data['accept_id']).first()
+    if accept is None:
+        return ("wrong_input", "Accept not found")
+
+
+    # Check if battle already started
+    if battle.battle_state == BattleState.in_battle:
+        return ("wrong_input", "Battle already started")
+    if battle.owner_address == accept.owner_address:
+        return ("wrong_input", "User can't fight himself")
+
 
     # Then gettign sids of both players
     battle_creator_sid = battles[battle.id]['creator'].sid
-    accept_creator_sid = battles[accept.id]['creator'].sid
+    accept_creator_sid = accepts[accept.id]['creator'].sid
 
-    if battle.owner_address == accept.owner_address:
-        return ("wrong_input", "User can't fight himself")
 
     # Commiting that battle started and creator picked opponent
     battle.battle_state = BattleState.in_battle
@@ -337,7 +345,7 @@ async def start_battle(sid, data):
     clients[accept_creator_sid].current_battle = battle.id
 
     # Saving info about acceptor in battle
-    battle[battle.id]['acceptor'] = accept_creator_sid
+    battles[battle.id]['acceptor'] = accept_creator_sid
 
     # Returning information about created battle (DB)
     pydantic_battle = PydanticBattle.from_orm(battle)
