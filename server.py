@@ -315,8 +315,8 @@ async def start_battle(sid, data):
         Accept.id == data['accept_id']).first()
 
     # Then gettign sids of both players
-    battle_creator_sid = battles[battle.id]['creator']['sid']
-    accept_creator_sid = battles[accept.id]['creator']['sid']
+    battle_creator_sid = battles[battle.id]['creator'].sid
+    accept_creator_sid = battles[accept.id]['creator'].sid
 
     if battle.owner_address == accept.owner_address:
         return ("wrong_input", "User can't fight himself")
