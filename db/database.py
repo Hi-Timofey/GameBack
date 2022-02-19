@@ -24,7 +24,7 @@ def global_init_sqlite(db_file):
     print(f"Connecting to db by {conn_str}")
 
     engine = sa.create_engine(conn_str, echo=False)
-    __factory = orm.sessionmaker(bind=engine)
+    __factory = orm.sessionmaker(bind=engine, autoflush=True)
 
     # from . import __all_models
 
