@@ -306,15 +306,11 @@ async def start_battle(sid, data):
         return ("wrong_input", "You need to pass 'battle_id' and 'accept_id'")
 
     db_sess = database.create_session()
-
+    battle = db_sess.query(Battle).filter(Battle.id == data['battle_id']).first()
     # Check if battle already started
-    if db_sess.query(Battle).filter(
-            Battle.id == data['battle_id']).first().state == BattleState.in_battle:
+    if battle.battle_state == BattleState.in_battle:
         return ("wrong_input", "Battle already started")
 
-    # getting from db all info
-    battle = db_sess.query(Battle).filter(
-        Battle.id == data['battle_id']).first()
     accept = db_sess.query(Accept).filter(
         Accept.id == data['accept_id']).first()
 
@@ -344,7 +340,6 @@ async def start_battle(sid, data):
     pydantic_battle = PydanticBattle.from_orm(battle)
     dict_battle = pydantic_battle.dict()
 
-    await sio.emit("started_battle", json.dumps(dict_battle), room=battle_creator_sid)
     await sio.emit("started_battle", json.dumps(dict_battle), room=accept_creator_sid)
     return json.dumps(dict_battle)
 
