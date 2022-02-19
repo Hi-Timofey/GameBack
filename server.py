@@ -246,6 +246,8 @@ async def accept_offer(sid, data):
     accept.nft_type = data['nft_type']
     accept.battle = battle
 
+    db_sess.add(accept)
+    db_sess.commit()
 
 
     # TODO: Issue due to disconnected users and not deleted battles, must be
@@ -264,8 +266,6 @@ async def accept_offer(sid, data):
     # Saving acceptor (access by accept_id)
     accepts[accept.id] = {"creator": clients[sid]}
 
-    db_sess.add(accept)
-    db_sess.commit()
 
     pydantic_accept = PydanticAccept.from_orm(accept)
     dict_accept = pydantic_accept.dict()
