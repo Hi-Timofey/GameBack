@@ -81,18 +81,21 @@ async def disconnect(sid):
 
     db_sess = database.create_session()
 
-    for battle_id in battles:
-        battle_info = battles[battle_id]
-        if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.listed:
-            battle_db = db_sess.query(Battle).filter(Battle.id == battle_id).first()
-            db_sess.delete(battle_db)
-            db_sess.commit()
-            del battles[battle_id]
-
-        if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.ended:
-            del battles[battle_id]
-
     del clients[sid]
+    try:
+        for battle_id in battles:
+            battle_info = battles[battle_id]
+            if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.listed:
+                battle_db = db_sess.query(Battle).filter(Battle.id == battle_id).first()
+                db_sess.delete(battle_db)
+                db_sess.commit()
+                del battles[battle_id]
+
+            if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.ended:
+                del battles[battle_id]
+    except BaseException as be:
+        logging.warning(f'{be} coused after {sid} disconnected')
+
 
 
 
