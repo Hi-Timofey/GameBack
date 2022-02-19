@@ -87,6 +87,8 @@ async def disconnect(sid):
             battle_info = battles[battle_id]
             if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.listed:
                 battle_db = db_sess.query(Battle).filter(Battle.id == battle_id).first()
+                for b in battle_db:
+                    db_sess.delete(b.accepts)
                 db_sess.delete(battle_db)
                 db_sess.commit()
                 del battles[battle_id]
@@ -182,7 +184,6 @@ async def create_battle_offer(sid, data):
     dict_battle = pydantic_battle.dict(exclude={'owner_address'})
 
     # Adding hybrid property to response dict - uri
-    # TODO: Make it automatic
     dict_battle['uri'] = battle.uri
 
     return json.dumps(dict_battle)
@@ -247,8 +248,8 @@ async def accept_offer(sid, data):
     accept.battle = battle
 
     db_sess.add(accept)
+    db_sess.flush()
     db_sess.commit()
-
 
     # TODO: Issue due to disconnected users and not deleted battles, must be
     # fixed
@@ -361,6 +362,7 @@ async def make_move(sid, data):
     if clients[sid].state == ClientState.logging_in:
         return ('authentication_error', 'You need to log in first')
 
+    # TODO: only choice
     if not check_passed_data(data, 'round', 'choice', 'battle_id'):
         return ("wrong_input", "You need to pass all args: round, choice, battle_id")
 
