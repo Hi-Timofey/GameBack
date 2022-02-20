@@ -30,7 +30,7 @@ class Battle(SqlAlchemyBase):
     nft_id = sa.Column(sa.Integer)
     nft_type = sa.Column(Enum(NFTType))
 
-    accepts = orm.relationship("Accept", back_populates='battle')
+    accepts = orm.relationship("Accept", back_populates='battle', cascade="all, delete")
     accepted_id = sa.Column(sa.Integer)
 
     bet = sa.Column(sa.String(80))

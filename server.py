@@ -1,7 +1,7 @@
 # -*- coding: utf-7 -*-
 
 import logging
-
+import asyncio
 import socketio
 from sanic import Sanic
 
@@ -80,20 +80,22 @@ async def disconnect(sid):
     logging.info(f'Client {sid} disconnected')
 
     db_sess = database.create_session()
-
-    del clients[sid]
+    to_delete_ind = []
     try:
-        for battle_id in battles:
-            battle_info = battles[battle_id]
-            if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.listed:
-                battle_db = db_sess.query(Battle).filter(Battle.id == battle_id).first()
-                for b in battle_db:
-                    db_sess.delete(b.accepts)
-                db_sess.delete(battle_db)
-                db_sess.commit()
-                del battles[battle_id]
+        lock = asyncio.Lock()
+        async with lock:
+            del clients[sid]
+            for battle_id in battles:
+                battle_info = battles[battle_id]
+                if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.listed:
+                    battle_db = db_sess.query(Battle).filter(Battle.id == battle_id).first()
+                    db_sess.delete(battle_db)
+                    db_sess.commit()
+                    to_delete_ind.append(battle_id)
 
-            if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.ended:
+                if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.ended:
+                    to_delete_ind.append(battle_id)
+            for battle_id in to_delete_ind:
                 del battles[battle_id]
     except BaseException as be:
         logging.warning(f'{be} coused after {sid} disconnected')
@@ -254,7 +256,7 @@ async def accept_offer(sid, data):
     # TODO: Issue due to disconnected users and not deleted battles, must be
     # fixed
     try:
-        creator_sid = battles[battle.id]['creator']['sid']
+        creator_sid = battles[battle.id]['creator'].sid
     except:
         owner_address = battle.owner_address
         creator_sid = None
@@ -302,7 +304,6 @@ async def accepts_list(sid, data):
 
 @sio.event
 async def start_battle(sid, data):
-    logging.info(f'Client {sid} starting battle')
     if clients[sid].state == ClientState.logging_in:
         return ('authentication_error', 'You need to log in first')
 
@@ -329,8 +330,10 @@ async def start_battle(sid, data):
 
 
     # Then gettign sids of both players
-    battle_creator_sid = battles[battle.id]['creator'].sid
-    accept_creator_sid = accepts[accept.id]['creator'].sid
+    battle_creator = battles[battle.id]['creator']
+    accept_creator = accepts[accept.id]['creator']
+
+    logging.info(f'Client {sid} starting battle with {accept_creator.sid}')
 
 
     # Commiting that battle started and creator picked opponent
@@ -340,19 +343,19 @@ async def start_battle(sid, data):
     db_sess.commit()
 
     # Both players now IN_BATTLE
-    clients[battle_creator_sid].state = ClientState.in_battle
-    clients[battle_creator_sid].current_battle = battle.id
-    clients[accept_creator_sid].state = ClientState.in_battle
-    clients[accept_creator_sid].current_battle = battle.id
+    clients[battle_creator.sid].state = ClientState.in_battle
+    clients[battle_creator.sid].current_battle = battle.id
+    clients[accept_creator.sid].state = ClientState.in_battle
+    clients[accept_creator.sid].current_battle = battle.id
 
     # Saving info about acceptor in battle
-    battles[battle.id]['acceptor'] = accept_creator_sid
+    battles[battle.id]['acceptor'] = accept_creator.sid
 
     # Returning information about created battle (DB)
     pydantic_battle = PydanticBattle.from_orm(battle)
     dict_battle = pydantic_battle.dict()
 
-    await sio.emit("started_battle", json.dumps(dict_battle), room=accept_creator_sid)
+    await sio.emit("started_battle", json.dumps(dict_battle), room=accept_creator.sid)
     return json.dumps(dict_battle)
 
 
