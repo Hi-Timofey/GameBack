@@ -446,15 +446,15 @@ async def make_move(sid, data):
             else:
                 round_of_battle.winner_user_address = player2.owner_address
 
-    # Guessing winner SID from user_id
-    # TODO Simplify
-    if round_of_battle.winner_user_address == player2.owner_address:
-        round_of_battle.winner_sid = sid
-    else:
-        if sid == creator_info.sid:
-            round_of_battle.winner_sid = acceptor_info.sid
+        # Guessing winner SID from user_id
+        # TODO Simplify
+        if round_of_battle.winner_user_address == player2.owner_address:
+            round_of_battle.winner_sid = sid
         else:
-            round_of_battle.winner_sid = creator_info.sid
+            if sid == creator_info.sid:
+                round_of_battle.winner_sid = acceptor_info.sid
+            else:
+                round_of_battle.winner_sid = creator_info.sid
 
     # After checking if we had winner - adding round with moves to local log
     if is_round_new:
