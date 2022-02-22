@@ -45,6 +45,8 @@ class ClientState(Enum):
 # Client connection data
 clients = {}
 # Client data class
+
+
 @dataclass
 class Client:
     sid: str
@@ -59,6 +61,7 @@ class Client:
             if clients[sid].address == address:
                 return sid
         raise ValueError(f'Not found client with address {address}')
+
 
 # Memory battlers sids
 # BATTLES: 'creator', 'log', 'state'
@@ -352,6 +355,13 @@ async def start_battle(sid, data):
 
     # Saving info about acceptor in battle
     battles[battle.id]['acceptor'] = accept_creator
+    battles[battle.id]['creator_hp'] = 100
+    battles[battle.id]['acceptor_hp'] = 100
+
+    first_round = Round()
+    first_round.round_number = 1
+    first_round.battle = battle
+    battles[battle.id]['log'].append(first_round)
 
     # Returning information about created battle (DB)
     pydantic_battle = PydanticBattle.from_orm(battle)
@@ -394,23 +404,16 @@ async def make_move(sid, data):
     # Getting local logs and trying to get round if exists
     log_of_battle = battle_info['log']
 
-    # Local storage is empty - creating first round
     # Round with one move - getting
     # Round with two moves - create another one
-    if log_of_battle == []:
+    if len(log_of_battle[-1].moves) == 2:
         round_of_battle = Round()
-        round_of_battle.round_number = 1
+        round_of_battle.round_number = len(log_of_battle) + 1
         round_of_battle.battle = battle
         is_round_new = True
-    elif len(log_of_battle) > 0:
-        if len(log_of_battle[-1].moves) == 2:
-            round_of_battle = Round()
-            round_of_battle.round_number = len(log_of_battle)+1
-            round_of_battle.battle = battle
-            is_round_new = True
-        elif len(log_of_battle[-1].moves) == 1:
-            round_of_battle = log_of_battle[-1]
-            is_round_new = False
+    elif len(log_of_battle[-1].moves) <= 1:
+        round_of_battle = log_of_battle[-1]
+        is_round_new = False
 
     move = Move()
     move.owner_address = clients[sid].address
@@ -434,7 +437,7 @@ async def make_move(sid, data):
             if player2.choice == Choice.trick:
                 round_of_battle.winner_user_address = player1.owner_address
             else:
-                round_of_battle.winner_user_address = None
+                round_of_battle.winner_user_address = player2.owner_address
         elif player1.choice == Choice.trick:
             if player2.choice == Choice.block:
                 round_of_battle.winner_user_address = player1.owner_address
@@ -442,19 +445,59 @@ async def make_move(sid, data):
                 round_of_battle.winner_user_address = player2.owner_address
         elif player1.choice == Choice.block:
             if player2.choice == Choice.attack:
-                round_of_battle.winner_user_address = None
+                round_of_battle.winner_user_address = player1.owner_address
             else:
                 round_of_battle.winner_user_address = player2.owner_address
 
-        # Guessing winner SID from user_id
-        # TODO Simplify
+    # Guessing winner SID from user_id
+    # TODO Simplify
+    # If there is a winner - emitting end of round
+    if round_of_battle.winner_user_address is not None:
         if round_of_battle.winner_user_address == player2.owner_address:
             round_of_battle.winner_sid = sid
+            if sid == creator_info.sid:
+                battles[battle.id]['creator_hp'] -= 30
+            else:
+                battles[battle.id]['acceptor_hp'] -= 30
         else:
             if sid == creator_info.sid:
                 round_of_battle.winner_sid = acceptor_info.sid
+                battles[battle.id]['creator_hp'] -= 30
             else:
                 round_of_battle.winner_sid = creator_info.sid
+                battles[battle.id]['acceptor_hp'] -= 30
+
+        # End of round event
+        if sid == creator_info.sid:
+            await sio.emit("round_ended", {
+                'left_choice': player2.choice, # creator
+                'right_choice': player1.choice, # acceptor
+                'left_hp': battles[battle.id]['creator_hp'],# creator
+                'right_hp': battles[battle.id]['acceptor_hp']}, # acceptor
+                room=creator_info.sid)
+
+            await sio.emit("round_ended", {
+                'left_choice': player1.choice, # acceptor
+                'right_choice': player2.choice, # creator
+                'left_hp': battles[battle.id]['acceptor_hp'],#acceptor
+                'right_hp': battles[battle.id]['creator_hp']},# creator
+                room=acceptor_info.sid)
+        elif sid == acceptor_info.sid:
+            await sio.emit("round_ended", {
+                'left_choice': player2.choice, #acceptor
+                'right_choice': player1.choice, # creator
+                'left_hp': battles[battle.id]['acceptor_hp'],# acceptor
+                'right_hp': battles[battle.id]['creator_hp']}, # creator
+                room=acceptor_info.sid)
+
+            await sio.emit("round_ended", {
+                'left_choice': player1.choice, #creator
+                'right_choice': player2.choice, # acceptor
+                'left_hp': battles[battle.id]['creator_hp'],# creator
+                'right_hp': battles[battle.id]['acceptor_hp']}, # acceptor
+                room=creator_info.sid)
+        return
+
 
     # After checking if we had winner - adding round with moves to local log
     if is_round_new:
@@ -462,16 +505,12 @@ async def make_move(sid, data):
     else:
         battles[battle.id]['log'][-1] = round_of_battle
 
-    pydantic_move = PydanticMove.from_orm(move)
-    dict_move = pydantic_move.dict()
-
     # Sending both players event about move.
-    if sid == creator_info.sid:
-        await sio.emit("opponent_maked_move", json.dumps(dict_move), room=acceptor_info.sid)
-    else:
-        await sio.emit("opponent_maked_move", json.dumps(dict_move), room=creator_info.sid)
-
-    return json.dumps(dict_move)
+    # if sid == creator_info.sid:
+    #     await sio.emit("opponent_maked_move", 'Your opponmove has made a move', room=acceptor_info.sid)
+    # else:
+    #     await sio.emit("opponent_maked_move", 'Your opponmove has made a move', room=creator_info.sid)
+    return ('maked_move', 'Your move is registered')
 
 
 @sio.event
