@@ -432,74 +432,48 @@ async def make_move(sid, data):
         # Game logic
         if player1.choice == player2.choice:
             round_of_battle.winner_user_address = 'no_one'
+            round_of_battle.winner_sid = 'no_one'
+        else:
+            if player1.choice == Choice.attack:
+                if player2.choice == Choice.trick:
+                    round_of_battle.winner_user_address = player1.owner_address
+                else:
+                    round_of_battle.winner_user_address = player2.owner_address
+            elif player1.choice == Choice.trick:
+                if player2.choice == Choice.block:
+                    round_of_battle.winner_user_address = player1.owner_address
+                else:
+                    round_of_battle.winner_user_address = player2.owner_address
+            elif player1.choice == Choice.block:
+                if player2.choice == Choice.attack:
+                    round_of_battle.winner_user_address = player1.owner_address
+                else:
+                    round_of_battle.winner_user_address = player2.owner_address
+            round_of_battle.winner_sid = Client.get_sid_by_address(
+                round_of_battle.winner_user_address)
 
-        elif player1.choice == Choice.attack:
-            if player2.choice == Choice.trick:
-                round_of_battle.winner_user_address = player1.owner_address
-            else:
-                round_of_battle.winner_user_address = player2.owner_address
-        elif player1.choice == Choice.trick:
-            if player2.choice == Choice.block:
-                round_of_battle.winner_user_address = player1.owner_address
-            else:
-                round_of_battle.winner_user_address = player2.owner_address
-        elif player1.choice == Choice.block:
-            if player2.choice == Choice.attack:
-                round_of_battle.winner_user_address = player1.owner_address
-            else:
-                round_of_battle.winner_user_address = player2.owner_address
-
-    # Guessing winner SID from user_id
-    # TODO Simplify
     # If there is a winner - emitting end of round
     if round_of_battle.winner_user_address is not None:
-        if round_of_battle.winner_user_address == player2.owner_address:
-            # round_of_battle.winner_sid = sid
-            if sid == creator_info.sid:
-                battles[battle.id]['acceptor_hp'] -= 30
-            else:
-                battles[battle.id]['creator_hp'] -= 30
-        elif round_of_battle.winner_user_address == player1.owner_address:
-            if sid == creator_info.sid:
-                # round_of_battle.winner_sid = acceptor_info.sid
-                battles[battle.id]['acceptor_hp'] -= 30
-            else:
-                # round_of_battle.winner_sid = creator_info.sid
-                battles[battle.id]['creator_hp'] -= 30
-        # else:
-        #     round_of_battle.winner_sid = 'no_one'
+        if round_of_battle.winner_sid == creator_info.sid:
+            battles[battle.id]['acceptor_hp'] -= 30
+        elif round_of_battle.winner_sid == acceptor_info.sid:
+            battles[battle.id]['creator_hp'] -= 30
 
         # End of round event
-        if sid == creator_info.sid:
-            await sio.emit("round_ended", {
-                'left_choice': player2.choice, # creator
-                'right_choice': player1.choice, # acceptor
-                'left_hp': battles[battle.id]['creator_hp'],# creator
-                'right_hp': battles[battle.id]['acceptor_hp']}, # acceptor
-                room=creator_info.sid)
+        await sio.emit("round_ended", {
+            'left_choice': round_of_battle.get_move_of_address(creator_info.address).choice,
+            'right_choice': round_of_battle.get_move_of_address(acceptor_info.address).choice,
+            'left_hp': battles[battle.id]['creator_hp'],
+            'right_hp': battles[battle.id]['acceptor_hp']},
+            room=creator_info.sid)
 
-            await sio.emit("round_ended", {
-                'left_choice': player1.choice, # acceptor
-                'right_choice': player2.choice, # creator
-                'left_hp': battles[battle.id]['acceptor_hp'],#acceptor
-                'right_hp': battles[battle.id]['creator_hp']},# creator
-                room=acceptor_info.sid)
-        elif sid == acceptor_info.sid:
-            await sio.emit("round_ended", {
-                'left_choice': player2.choice, #acceptor
-                'right_choice': player1.choice, # creator
-                'left_hp': battles[battle.id]['acceptor_hp'],# acceptor
-                'right_hp': battles[battle.id]['creator_hp']}, # creator
-                room=acceptor_info.sid)
-
-            await sio.emit("round_ended", {
-                'left_choice': player1.choice, #creator
-                'right_choice': player2.choice, # acceptor
-                'left_hp': battles[battle.id]['creator_hp'],# creator
-                'right_hp': battles[battle.id]['acceptor_hp']}, # acceptor
-                room=creator_info.sid)
+        await sio.emit("round_ended", {
+            'left_choice': round_of_battle.get_move_of_address(acceptor_info.address).choice,
+            'right_choice': round_of_battle.get_move_of_address(creator_info.address).choice,
+            'left_hp': battles[battle.id]['acceptor_hp'],  # acceptor
+            'right_hp': battles[battle.id]['creator_hp']},  # creator
+            room=acceptor_info.sid)
         return
-
 
     # After checking if we had winner - adding round with moves to local log
     if is_round_new:
@@ -511,7 +485,8 @@ async def make_move(sid, data):
     # if sid == creator_info.sid:
     #     await sio.emit("opponent_maked_move", 'Your opponmove has made a move', room=acceptor_info.sid)
     # else:
-    #     await sio.emit("opponent_maked_move", 'Your opponmove has made a move', room=creator_info.sid)
+    # await sio.emit("opponent_maked_move", 'Your opponmove has made a move',
+    # room=creator_info.sid)
     return ('maked_move', 'Your move is registered')
 
 

@@ -1,5 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
+from sqlalchemy.ext.hybrid import hybrid_method
+
 
 from .database import SqlAlchemyBase
 
@@ -21,3 +23,10 @@ class Round(SqlAlchemyBase):
     battle = orm.relationship("Battle")
 
     moves = orm.relationship("Move", back_populates='round')
+
+    @hybrid_method
+    def get_move_of_address(self, address: str) -> Move:
+        for move in self.moves:
+            if move.owner_address == address:
+                return move
+        raise ValueError('not found move with such address')
