@@ -454,20 +454,20 @@ async def make_move(sid, data):
     # If there is a winner - emitting end of round
     if round_of_battle.winner_user_address is not None:
         if round_of_battle.winner_user_address == player2.owner_address:
-            round_of_battle.winner_sid = sid
+            # round_of_battle.winner_sid = sid
             if sid == creator_info.sid:
-                battles[battle.id]['creator_hp'] -= 30
-            else:
                 battles[battle.id]['acceptor_hp'] -= 30
+            else:
+                battles[battle.id]['creator_hp'] -= 30
         elif round_of_battle.winner_user_address == player1.owner_address:
             if sid == creator_info.sid:
-                round_of_battle.winner_sid = acceptor_info.sid
-                battles[battle.id]['creator_hp'] -= 30
-            else:
-                round_of_battle.winner_sid = creator_info.sid
+                # round_of_battle.winner_sid = acceptor_info.sid
                 battles[battle.id]['acceptor_hp'] -= 30
-        else:
-            round_of_battle.winner_sid = 'no_one'
+            else:
+                # round_of_battle.winner_sid = creator_info.sid
+                battles[battle.id]['creator_hp'] -= 30
+        # else:
+        #     round_of_battle.winner_sid = 'no_one'
 
         # End of round event
         if sid == creator_info.sid:
