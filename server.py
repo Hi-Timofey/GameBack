@@ -431,7 +431,7 @@ async def make_move(sid, data):
 
         # Game logic
         if player1.choice == player2.choice:
-            round_of_battle.winner_user_address = None
+            round_of_battle.winner_user_address = 'no_one'
 
         elif player1.choice == Choice.attack:
             if player2.choice == Choice.trick:
@@ -459,13 +459,15 @@ async def make_move(sid, data):
                 battles[battle.id]['creator_hp'] -= 30
             else:
                 battles[battle.id]['acceptor_hp'] -= 30
-        else:
+        elif round_of_battle.winner_user_address == player1.owner_address:
             if sid == creator_info.sid:
                 round_of_battle.winner_sid = acceptor_info.sid
                 battles[battle.id]['creator_hp'] -= 30
             else:
                 round_of_battle.winner_sid = creator_info.sid
                 battles[battle.id]['acceptor_hp'] -= 30
+        else:
+            round_of_battle.winner_sid = 'no_one'
 
         # End of round event
         if sid == creator_info.sid:
