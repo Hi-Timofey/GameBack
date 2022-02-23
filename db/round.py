@@ -25,7 +25,7 @@ class Round(SqlAlchemyBase):
     moves = orm.relationship("Move", back_populates='round')
 
     @hybrid_method
-    def get_move_of_address(self, address: str) -> Move:
+    def get_move_of_address(self, address: str):
         for move in self.moves:
             if move.owner_address == address:
                 return move
