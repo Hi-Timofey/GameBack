@@ -529,4 +529,4 @@ if __name__ == '__main__':
         level=logging.INFO,
         format='%(asctime)s | %(levelname)s - %(message)s')
 
-    app.run('0.0.0.0', 8080)
+    app.run('0.0.0.0', 8443)
