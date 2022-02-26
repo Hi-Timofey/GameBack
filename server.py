@@ -208,7 +208,8 @@ async def get_recommended_battles(sid):
         db_sess = database.create_session()
 
         all_offers = db_sess.query(Battle).filter(
-            Battle.owner_address != clients[sid].address).all()
+            Battle.owner_address != clients[sid].address).filter(
+            Battle.battle_state == BattleState.listed).all()
         if len(all_offers) >= 3:
             recommended_battles = random.sample(all_offers, k=3)
         else:
@@ -251,6 +252,9 @@ async def accept_offer(sid, data):
     if battle.owner_address == clients[sid].address:
         logging.debug(f'Client {sid} accepting self created battle')
         return ("wrong_input", "Can not fight yourself")
+
+    if battle.battle_state != BattleState.listed:
+        return ("wrong_input", "Battle already started")
 
     accept = Accept()
     accept.owner_address = clients[sid].address
@@ -338,6 +342,9 @@ async def start_battle(sid, data):
     # Then gettign sids of both players
     battle_creator = battles[battle.id]['creator']
     accept_creator = accepts[accept.id]['creator']
+
+    if battle_creator.sid == accept_creator.sid:
+        return ("wrong_input", "User can't fight himself")
 
     logging.info(f'Client {sid} starting battle with {accept_creator.sid}')
 
