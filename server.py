@@ -370,6 +370,10 @@ async def start_battle(sid, data):
     first_round.battle = battle
     battles[battle.id]['log'].append(first_round)
 
+    for a in battle.accepts:
+        if a.id != battle.accepted_id:
+            await sio.emit("battle_canceled", {'battle_id': battle.id}, room=Client.get_sid_by_address(a.owner_address))
+
     # Returning information about created battle (DB)
     pydantic_battle = PydanticBattle.from_orm(battle)
     dict_battle = pydantic_battle.dict()
