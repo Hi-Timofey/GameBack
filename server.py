@@ -43,8 +43,8 @@ class ClientState(Enum):
 
 
 # Client connection data
+# TODO: change to sio.save_session
 clients = {}
-# Client data class
 
 
 @dataclass
@@ -379,10 +379,75 @@ async def start_battle(sid, data):
     dict_battle = pydantic_battle.dict()
 
     await sio.emit("started_battle", json.dumps(dict_battle), room=accept_creator.sid)
+    await sio.start_background_task(round_timeout, (battle_id))
     return json.dumps(dict_battle)
 
 
-# TODO: Replacing user_id with address
+async def round_timeout(battle_id):
+    logging.debug(f'timeout function started working')
+    await sio.sleep(seconds=5.5)
+    logging.debug(f'timeout for move')
+
+    battle_info = battles[battle_id]
+    round_of_battle = battle_info['log'][-1]
+    logging.debug(f'ROUND: {round_of_battle}')
+
+    if len(round_of_battle.moves) == 1:
+        logging.debug(f'1 random move')
+        creator_info = battle_info['creator']
+        acceptor_info = battle_info['acceptor']
+        random_move = Move()
+        random_move.round_id = round_of_battle.id
+        random_move.choice = random.choice(list(Choice))
+        if round_of_battle.moves[1].owner_address == creator_info.address:
+            random_move.owner_address == acceptor_info.address
+        else:
+            random_move.owner_address == creator_info.address
+        round_of_battle.moves.append(random_move)
+    elif len(round_of_battle.moves) == 0:
+        logging.debug(f'2 random move')
+        first_move = Move()
+        first_move.round_id = round_of_battle.id
+        first_move.choice = random.choice(list(Choice))
+        first_move.owner_address = creator_info.address
+        round_of_battle.moves.append(first_move)
+
+        second_move = Move()
+        second_move.round_id = round_of_battle.id
+        second_move.choice = random.choice(list(Choice))
+        second_move.owner_address = acceptor_info.address
+        round_of_battle.moves.append(second_move)
+    else:
+        logging.debug(f'0 random move (round completed)')
+    round_of_battle.set_winner_user_address()
+    round_of_battle.winner_sid = Client.get_sid_by_address(
+                round_of_battle.winner_user_address)
+    battles[battle_id]['log'][-1] = round_of_battle
+    emit_ended_round(round_of_battle, creator_info, acceptor_info)
+    return
+
+def emit_ended_round(round_of_battle, creator_info: Client, acceptor_info: Client):
+    if round_of_battle.winner_sid == creator_info.sid:
+        battles[battle.id]['acceptor_hp'] -= 30
+    elif round_of_battle.winner_sid == acceptor_info.sid:
+        battles[battle.id]['creator_hp'] -= 30
+
+    # End of round event
+    await sio.emit("round_ended", {
+        'left_choice': round_of_battle.get_move_of_address(creator_info.address).choice,
+        'right_choice': round_of_battle.get_move_of_address(acceptor_info.address).choice,
+        'left_hp': battles[battle.id]['creator_hp'],
+        'right_hp': battles[battle.id]['acceptor_hp']},
+        room=creator_info.sid)
+
+    await sio.emit("round_ended", {
+        'left_choice': round_of_battle.get_move_of_address(acceptor_info.address).choice,
+        'right_choice': round_of_battle.get_move_of_address(creator_info.address).choice,
+        'left_hp': battles[battle.id]['acceptor_hp'],  # acceptor
+        'right_hp': battles[battle.id]['creator_hp']},  # creator
+        room=acceptor_info.sid)
+
+
 @sio.event
 async def make_move(sid, data):
     if clients[sid].state == ClientState.logging_in:
@@ -465,30 +530,13 @@ async def make_move(sid, data):
 
     # If there is a winner - emitting end of round
     if round_of_battle.winner_user_address is not None:
-        if round_of_battle.winner_sid == creator_info.sid:
-            battles[battle.id]['acceptor_hp'] -= 30
-        elif round_of_battle.winner_sid == acceptor_info.sid:
-            battles[battle.id]['creator_hp'] -= 30
-
-        # End of round event
-        await sio.emit("round_ended", {
-            'left_choice': round_of_battle.get_move_of_address(creator_info.address).choice,
-            'right_choice': round_of_battle.get_move_of_address(acceptor_info.address).choice,
-            'left_hp': battles[battle.id]['creator_hp'],
-            'right_hp': battles[battle.id]['acceptor_hp']},
-            room=creator_info.sid)
-
-        await sio.emit("round_ended", {
-            'left_choice': round_of_battle.get_move_of_address(acceptor_info.address).choice,
-            'right_choice': round_of_battle.get_move_of_address(creator_info.address).choice,
-            'left_hp': battles[battle.id]['acceptor_hp'],  # acceptor
-            'right_hp': battles[battle.id]['creator_hp']},  # creator
-            room=acceptor_info.sid)
+        emit_ended_round(round_of_battle, creator_info, acceptor_info)
         return
 
     # After checking if we had winner - adding round with moves to local log
     if is_round_new:
         battles[battle.id]['log'].append(round_of_battle)
+        await sio.start_background_task(round_timeout, (battle_id))
     else:
         battles[battle.id]['log'][-1] = round_of_battle
 
