@@ -426,7 +426,7 @@ async def round_timeout(battle_id):
     emit_ended_round(round_of_battle, creator_info, acceptor_info)
     return
 
-def emit_ended_round(round_of_battle, creator_info: Client, acceptor_info: Client):
+async def emit_ended_round(round_of_battle, creator_info: Client, acceptor_info: Client):
     if round_of_battle.winner_sid == creator_info.sid:
         battles[battle.id]['acceptor_hp'] -= 30
     elif round_of_battle.winner_sid == acceptor_info.sid:
