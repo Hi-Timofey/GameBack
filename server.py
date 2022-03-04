@@ -379,7 +379,7 @@ async def start_battle(sid, data):
     dict_battle = pydantic_battle.dict()
 
     await sio.emit("started_battle", json.dumps(dict_battle), room=accept_creator.sid)
-    await sio.start_background_task(round_timeout, (battle_id))
+    await sio.start_background_task(round_timeout, (battle.id))
     return json.dumps(dict_battle)
 
 
