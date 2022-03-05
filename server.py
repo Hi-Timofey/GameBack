@@ -57,6 +57,8 @@ class Client:
 
     def get_sid_by_address(address) -> str:
         global clients
+        if address == 'no_one':
+            return 'no_one'
         for sid in clients:
             if clients[sid].address == address:
                 return sid
@@ -391,15 +393,15 @@ async def round_timeout(battle_id):
     battle_info = battles[battle_id]
     round_of_battle = battle_info['log'][-1]
     logging.debug(f'ROUND: {round_of_battle}')
+    creator_info = battle_info['creator']
+    acceptor_info = battle_info['acceptor']
 
     if len(round_of_battle.moves) == 1:
         logging.debug(f'1 random move')
-        creator_info = battle_info['creator']
-        acceptor_info = battle_info['acceptor']
         random_move = Move()
         random_move.round_id = round_of_battle.id
         random_move.choice = random.choice(list(Choice))
-        if round_of_battle.moves[1].owner_address == creator_info.address:
+        if round_of_battle.moves[0].owner_address == creator_info.address:
             random_move.owner_address == acceptor_info.address
         else:
             random_move.owner_address == creator_info.address

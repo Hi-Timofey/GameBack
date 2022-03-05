@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.ext.hybrid import hybrid_method
+from .move import Choice
 
 
 from .database import SqlAlchemyBase
