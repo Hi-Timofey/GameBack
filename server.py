@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import time
 import asyncio
 import socketio
 from sanic import Sanic
@@ -381,13 +382,14 @@ async def start_battle(sid, data):
     dict_battle = pydantic_battle.dict()
 
     await sio.emit("started_battle", json.dumps(dict_battle), room=accept_creator.sid)
-    await sio.start_background_task(round_timeout, (battle.id))
+    # await sio.start_background_task(round_timeout, (battle.id))
     return json.dumps(dict_battle)
 
 
 async def round_timeout(battle_id):
     logging.debug(f'timeout function started working')
-    await sio.sleep(seconds=5.5)
+    # await sio.sleep(seconds=5.5)
+    time.sleep(10)
     logging.debug(f'timeout for move')
 
     battle_info = battles[battle_id]
@@ -425,10 +427,11 @@ async def round_timeout(battle_id):
     round_of_battle.winner_sid = Client.get_sid_by_address(
                 round_of_battle.winner_user_address)
     battles[battle_id]['log'][-1] = round_of_battle
-    emit_ended_round(round_of_battle, creator_info, acceptor_info)
+    await emit_ended_round(round_of_battle, creator_info, acceptor_info)
     return
 
 async def emit_ended_round(round_of_battle, creator_info: Client, acceptor_info: Client):
+    battle = round_of_battle.battle
     if round_of_battle.winner_sid == creator_info.sid:
         battles[battle.id]['acceptor_hp'] -= 30
     elif round_of_battle.winner_sid == acceptor_info.sid:
@@ -532,13 +535,13 @@ async def make_move(sid, data):
 
     # If there is a winner - emitting end of round
     if round_of_battle.winner_user_address is not None:
-        emit_ended_round(round_of_battle, creator_info, acceptor_info)
+        await emit_ended_round(round_of_battle, creator_info, acceptor_info)
         return
 
     # After checking if we had winner - adding round with moves to local log
     if is_round_new:
         battles[battle.id]['log'].append(round_of_battle)
-        await sio.start_background_task(round_timeout, (battle_id))
+        # await sio.start_background_task(round_timeout, (battle_id))
     else:
         battles[battle.id]['log'][-1] = round_of_battle
 
@@ -590,4 +593,4 @@ if __name__ == '__main__':
         level=logging.INFO,
         format='%(asctime)s | %(levelname)s - %(message)s')
 
-    app.run('0.0.0.0', 80)
+    app.run('0.0.0.0', 8080)
