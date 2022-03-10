@@ -3,7 +3,6 @@ from pydantic_sqlalchemy import sqlalchemy_to_pydantic
 
 # Importing models for out database
 from .database import *
-
 from .user import *
 from .session_keys import *
 from .accept import *

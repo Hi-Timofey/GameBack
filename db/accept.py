@@ -1,8 +1,6 @@
 import sqlalchemy as sa
-from typing import List
 from sqlalchemy import orm, Enum
 from .database import SqlAlchemyBase
-from .chains import Chain
 from .nft import NFTType
 from sqlalchemy.ext.hybrid import hybrid_property
 

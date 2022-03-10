@@ -1,19 +1,10 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import time
 import asyncio
 import socketio
 from sanic import Sanic
-
 import json
-from typing import List, Union, Optional
-from enum import Enum
 from dataclasses import dataclass
-
-# web3
-import web3
-from web3 import Web3
 from eth_account.messages import encode_defunct
 
 # Randomness modules
@@ -21,7 +12,7 @@ import uuid
 import random
 
 # Database modules
-from db import *
+from db import * # noqa
 
 
 def check_passed_data(dic: dict, *names):
@@ -37,7 +28,7 @@ def check_passed_data(dic: dict, *names):
 
 
 # Client states possible
-class ClientState(Enum):
+class ClientState(Enum): # noqa
     logging_in = 1
     in_menu = 2
     in_battle = 3
@@ -71,7 +62,7 @@ class Client:
 battles = {}
 accepts = {}
 
-database.global_init_sqlite('db.sqlite')
+database.global_init_sqlite('db.sqlite') # noqa
 sio = socketio.AsyncServer(async_mode='sanic', cors_allowed_origins='*')
 
 # Connect and disconnect handlers
@@ -89,7 +80,7 @@ async def connect(sid, environ):
 async def disconnect(sid):
     logging.info(f'Client {sid} disconnected')
 
-    db_sess = database.create_session()
+    db_sess = database.create_session() # noqa
     to_delete_ind = []
     try:
         lock = asyncio.Lock()
@@ -98,13 +89,13 @@ async def disconnect(sid):
             for battle_id in battles:
                 battle_info = battles[battle_id]
                 if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.listed:
-                    battle_db = db_sess.query(Battle).filter(
-                        Battle.id == battle_id).first()
+                    battle_db = db_sess.query(Battle).filter( # noqa
+                        Battle.id == battle_id).first() # noqa
                     db_sess.delete(battle_db)
                     db_sess.commit()
                     to_delete_ind.append(battle_id)
 
-                if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.ended:
+                if battle_info['creator'].sid == sid and battle_info['state'] == BattleState.ended: # noqa
                     to_delete_ind.append(battle_id)
             for battle_id in to_delete_ind:
                 del battles[battle_id]

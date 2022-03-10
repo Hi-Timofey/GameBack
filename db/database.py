@@ -11,6 +11,7 @@ __factory = None
 def _after_init_db():
     pass
 
+
 def global_init_sqlite(db_file):
     global __factory
 

@@ -163,7 +163,7 @@ async def list_offers(session_key: str):
 
 
 # Endpoint from old repo GameBack
-@app.get('/battles/accepts', response_model = List[schemas.Accept])
+@app.get('/battles/accepts', response_model=List[schemas.Accept])
 def accepts_list(offer_id: int, session_key: str):
     db_sess = database.create_session()
 
@@ -324,7 +324,7 @@ async def get_battle_log(json: schemas.BattleId, session_key: str):
     # TODO: Returning winner_user_id=NULL on not finished round
     return battle.log
 
-@app.get('/nfts/{address}', response_model = schemas.NFTBalance)
+@app.get('/nfts/{address}', response_model=schemas.NFTBalance)
 def nfts_by_address(address: str):
 
     address = web3.Web3.toChecksumAddress(address)
@@ -332,7 +332,7 @@ def nfts_by_address(address: str):
     polygon = web3.Web3(web3.Web3.HTTPProvider(POLYGON_RPC))
     ethereum = web3.Web3(web3.Web3.HTTPProvider(ETHEREUM_RPC))
 
-    shrooms = polygon.eth.contract(SHROOMS_CONTRACT, abi = NFT_ABI)
+    shrooms = polygon.eth.contract(SHROOMS_CONTRACT, abi=NFT_ABI)
     bots = ethereum.eth.contract(BOTS_CONTRACT, abi=NFT_ABI)
 
     shroom_ids = shrooms.functions.walletOfOwner(address).call()

@@ -1,20 +1,24 @@
 import sqlalchemy as sa
-from typing import List
 from sqlalchemy import orm, Enum
 from sqlalchemy.ext.hybrid import hybrid_property
 from enum import IntEnum
 from .database import SqlAlchemyBase
-from .chains import Chain
 from .nft import NFTType
 
 from web3 import Web3
+
 POLYGON_RPC = 'https://polygon-rpc.com/'
 ETHEREUM_RPC = 'https://nodes.mewapi.io/rpc/eth'
 
 SHROOMS_CONTRACT = '0xD558BF191abfe28CA37885605C7754E77F9DF0eF'
 BOTS_CONTRACT = '0x0111546FEB693b9d9d5886e362472886b71D5337'
 
-NFT_ABI = '[{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "walletOfOwner", "outputs": [ { "name": "balances", "type": "uint256[]" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "tokenId", "type": "uint256" } ], "name": "tokenURI", "outputs": [ { "name": "uri", "type": "string" } ], "payable": false, "type": "function"}]'
+NFT_ABI = '[{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", ' \
+          '"outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "type": "function" }, ' \
+          '{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "walletOfOwner", ' \
+          '"outputs": [ { "name": "balances", "type": "uint256[]" } ], "payable": false, "type": "function" }, ' \
+          '{ "constant": true, "inputs": [ { "name": "tokenId", "type": "uint256" } ], "name": "tokenURI", ' \
+          '"outputs": [ { "name": "uri", "type": "string" } ], "payable": false, "type": "function"}] '
 
 
 class BattleState(IntEnum):

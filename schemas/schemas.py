@@ -58,6 +58,7 @@ class MoveCompact(BaseModel):
     class Config:
         orm_mode = True
 
+
 class Round(BaseModel):
     round_number: int
     battle_id: int
@@ -79,15 +80,16 @@ class Battle(BaseModel):
         orm_mode = True
 
 
-
 class BattleId(BaseModel):
     battle_id: int
+
     class Config:
         orm_mode = True
 
 
 class LoginAddress(BaseModel):
     address: str
+
 
 class LoginSigned(BaseModel):
     signature: str
