@@ -1,5 +1,4 @@
-[![Flake8](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml/badge.svg?branch={branch})](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml)
-
+[![Flake8]
 
 # BV Game backend
 ## Description
