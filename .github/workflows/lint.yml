@@ -9,6 +9,10 @@ jobs:
   flake8_py3:
     runs-on: ubuntu-latest
     steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
@@ -16,8 +20,6 @@ jobs:
           architecture: x64
       - name: Git checkout
         uses: actions/checkout@v1
-      - name: Branch name
-        run: echo running on branch ${GITHUB_REF##*/}
       - name: Install flake8
         run: pip install flake8
       - name: Run flake8
