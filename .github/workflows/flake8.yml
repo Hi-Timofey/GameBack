@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '*.py'
+
 jobs:
   flake8_py3:
     runs-on: ubuntu-latest
