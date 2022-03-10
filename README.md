@@ -1,6 +1,6 @@
 [![Flake8](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml/badge.svg?branch={{current.branch}})](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml)
 
-{{ current.branch }}
+${GITHUB_REF_NAME}
 # BV Game backend
 ## Description
 This is new python version of backend implemented via fastapi
