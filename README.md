@@ -1,6 +1,7 @@
 [![Flake8]
 
 # BV Game backend
+
 ## Description
 This is new python version of backend implemented via fastapi
 
