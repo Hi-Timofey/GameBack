@@ -1,13 +1,13 @@
 name: Flake8
 
-on:
-  push:
-    paths:
-      - '*.py'
+on: [push]
 
 jobs:
-  flake8_py3:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       - name: Setup Python
         uses: actions/setup-python@v1
