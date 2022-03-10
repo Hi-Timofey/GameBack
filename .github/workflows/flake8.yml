@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Python Linter
+        uses: sunnysid3up/python-linter@v0.1-beta.7
       - name: Setup Python
         uses: actions/setup-python@v1
         with:
