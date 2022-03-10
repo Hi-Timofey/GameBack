@@ -33,7 +33,7 @@ class Round(SqlAlchemyBase):
         raise ValueError('not found move with such address')
 
     @hybrid_method
-    def set_winner_user_address(self):
+    def set_winner_user_address(self): # noqa
         if len(self.moves) == 2:
             # Player2 is a player who made last move so his sid is in "sid" var
             player1 = self.moves[0]  # != sid

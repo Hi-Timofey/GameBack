@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi import Response, status, HTTPException, Cookie
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from typing import List, Union, Optional
+from typing import List, Optional
 from sqlalchemy.orm import Session
 import web3
 from web3 import Web3
@@ -56,6 +56,7 @@ def get_nft_base_uris():
     bots_base_uri = bots.functions.tokenURI(0).call()[:-1]
 
     return shrooms_base_uri, bots_base_uri
+
 
 def check_session(db: Session, session_key: str) -> bool:
     try:
@@ -148,12 +149,11 @@ async def list_offers(session_key: str, user_id: Optional[int] = None):
 
 
 @app.get("/battles/recommended", response_model=List[schemas.Offer])
-async def list_offers(session_key: str):
+async def list_offers(session_key: str): # noqa
     db_sess = database.create_session()
 
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
-
 
     all_offers = db_sess.query(Offer).all()
     if len(all_offers) >= 3:
@@ -233,7 +233,7 @@ async def start_battle(battle_json: schemas.Battle, response: Response, session_
 
 
 @app.post("/battles/move", response_model=schemas.Move)
-async def move_battle(move_json: schemas.Move, response: Response, session_key: str):
+async def move_battle(move_json: schemas.Move, response: Response, session_key: str): # noqa
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -258,7 +258,7 @@ async def move_battle(move_json: schemas.Move, response: Response, session_key: 
 
     round_of_battle = db_sess.query(Round).filter(
         Round.battle_id == battle.id).filter(Round.round_number == move_json.round
-    ).first()
+                                             ).first()
 
     if round_of_battle is None:
         round_of_battle = Round()
@@ -311,8 +311,6 @@ async def move_battle(move_json: schemas.Move, response: Response, session_key: 
 
 @app.post("/battles/log", response_model=List[schemas.Round])
 async def get_battle_log(json: schemas.BattleId, session_key: str):
-
-
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -323,6 +321,7 @@ async def get_battle_log(json: schemas.BattleId, session_key: str):
 
     # TODO: Returning winner_user_id=NULL on not finished round
     return battle.log
+
 
 @app.get('/nfts/{address}', response_model=schemas.NFTBalance)
 def nfts_by_address(address: str):
@@ -341,7 +340,7 @@ def nfts_by_address(address: str):
     shrooms_base_uri, bots_base_uri = get_nft_base_uris()
 
     return schemas.NFTBalance(
-        shrooms = [
+        shrooms=[
             schemas.NFT(
                 token_id=token_id,
                 nft_type=schemas.NFTType.shroom,
