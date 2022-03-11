@@ -7,3 +7,4 @@ pydantic_sqlalchemy
 fastapi
 flake8
 black
+mypy

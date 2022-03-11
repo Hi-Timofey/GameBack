@@ -1,4 +1,4 @@
-import sqlalchemy as sa
+import sqlalchemy as sa  # type: ignore
 
 from .database import SqlAlchemyBase
 

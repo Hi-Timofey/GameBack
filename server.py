@@ -1,7 +1,7 @@
 import logging
 import time
 import asyncio
-import socketio
+import socketio  # type: ignore
 from sanic import Sanic
 import json
 from dataclasses import dataclass
@@ -36,7 +36,7 @@ class ClientState(Enum):  # noqa
 
 # Client connection data
 # TODO: change to sio.save_session
-clients = {}
+clients = {}  # type: ignore
 
 
 @dataclass
@@ -44,7 +44,7 @@ class Client:
     sid: str
     session_key: str
     address: str = ""
-    state: ClientState = ClientState.logging_in
+    state: ClientState = ClientState.logging_in  # type: ignore
     current_battle: int = -1
 
     def get_sid_by_address(address) -> str:
@@ -59,10 +59,10 @@ class Client:
 
 # Memory battlers sids
 # BATTLES: 'creator', 'log', 'state'
-battles = {}
+battles = {}  # type: ignore
 accepts = {}
 
-database.global_init_sqlite("db.sqlite")  # noqa
+database.global_init_sqlite("db.sqlite")  # type: ignore # noqa
 sio = socketio.AsyncServer(async_mode="sanic", cors_allowed_origins="*")
 
 # Connect and disconnect handlers

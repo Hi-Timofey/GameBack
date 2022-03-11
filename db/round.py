@@ -1,6 +1,6 @@
-import sqlalchemy as sa
+import sqlalchemy as sa  # type: ignore
 from sqlalchemy import orm
-from sqlalchemy.ext.hybrid import hybrid_method
+from sqlalchemy.ext.hybrid import hybrid_method  # type: ignore
 from .move import Choice
 
 

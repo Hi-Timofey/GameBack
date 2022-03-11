@@ -1,4 +1,4 @@
-import sqlalchemy as sa
+import sqlalchemy as sa  # type: ignore
 import datetime
 
 from .database import SqlAlchemyBase

@@ -1,8 +1,8 @@
-import sqlalchemy as sa
+import sqlalchemy as sa  # type: ignore
 from sqlalchemy import orm, Enum
 from .database import SqlAlchemyBase
 from .nft import NFTType
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property  # type: ignore
 
 from web3 import Web3
 
