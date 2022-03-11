@@ -1,7 +1,7 @@
-import sqlalchemy as sa # type: ignore
-import sqlalchemy.orm as orm # type: ignore
+import sqlalchemy as sa  # type: ignore
+import sqlalchemy.orm as orm  # type: ignore
 from sqlalchemy.orm import Session
-import sqlalchemy.ext.declarative as dec # type: ignore
+import sqlalchemy.ext.declarative as dec  # type: ignore
 
 SqlAlchemyBase = dec.declarative_base()
 
@@ -36,4 +36,4 @@ def global_init_sqlite(db_file):
 
 def create_session() -> Session:
     global __factory
-    return __factory() # type: ignore
+    return __factory()  # type: ignore

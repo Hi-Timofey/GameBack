@@ -1,6 +1,6 @@
-import sqlalchemy as sa # type: ignore
+import sqlalchemy as sa  # type: ignore
 from sqlalchemy import orm, Enum
-from sqlalchemy.ext.hybrid import hybrid_property # type: ignore
+from sqlalchemy.ext.hybrid import hybrid_property  # type: ignore
 from enum import IntEnum
 from .database import SqlAlchemyBase
 from .nft import NFTType

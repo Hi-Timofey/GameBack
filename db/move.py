@@ -1,4 +1,4 @@
-import sqlalchemy as sa # type: ignore
+import sqlalchemy as sa  # type: ignore
 from sqlalchemy import orm, Enum
 
 from enum import IntEnum

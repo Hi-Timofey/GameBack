@@ -1,7 +1,7 @@
 #!/bin/bash
 echo "Run Flake8"
-./venv/bin/flake8 *.py
+./venv/bin/flake8 ./
 echo "Run Black"
-./venv/bin/black *.py
+./venv/bin/black ./
 echo "Run MyPy"
-./venv/bin/mypy *.py
+./venv/bin/mypy ./
