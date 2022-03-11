@@ -241,7 +241,7 @@ async def start_battle(
 
 
 @app.post("/battles/move", response_model=schemas.Move)
-async def move_battle(
+async def move_battle( # noqa
     move_json: schemas.Move, response: Response, session_key: str
 ):  # noqa
     db_sess = database.create_session()

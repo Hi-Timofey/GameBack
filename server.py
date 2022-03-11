@@ -90,10 +90,10 @@ async def disconnect(sid):
                 battle_info = battles[battle_id]
                 if (
                     battle_info["creator"].sid == sid
-                    and battle_info["state"] == BattleState.listed
+                    and battle_info["state"] == BattleState.listed # noqa
                 ):  # noqa
                     battle_db = (
-                        db_sess.query(Battle)
+                        db_sess.query(Battle) # noqa
                         .filter(Battle.id == battle_id)  # noqa
                         .first()
                     )  # noqa
@@ -103,7 +103,7 @@ async def disconnect(sid):
 
                 if (
                     battle_info["creator"].sid == sid
-                    and battle_info["state"] == BattleState.ended
+                    and battle_info["state"] == BattleState.ended # noqa
                 ):  # noqa
                     to_delete_ind.append(battle_id)
             for battle_id in to_delete_ind:
@@ -150,7 +150,7 @@ async def get_battles_list(sid, data):
             address = Web3.toChecksumAddress(data["address"])  # noqa
             logging.debug(f"Client {sid} getting battles of {address}")
             battles = (
-                db_sess.query(Battle)
+                db_sess.query(Battle) # noqa
                 .filter(Battle.owner_address == address)  # noqa
                 .all()
             )  # noqa
@@ -196,7 +196,7 @@ async def create_battle_offer(sid, data):
     battles[battle.id] = {
         "creator": clients[sid],
         "log": [],
-        "state": BattleState.listed,
+        "state": BattleState.listed, # noqa
     }  # noqa
 
     pydantic_battle = PydanticBattle.from_orm(battle)  # noqa
@@ -219,7 +219,7 @@ async def get_recommended_battles(sid):
         db_sess = database.create_session()  # noqa
 
         all_offers = (
-            db_sess.query(Battle)
+            db_sess.query(Battle) # noqa
             .filter(Battle.owner_address != clients[sid].address)  # noqa
             .filter(Battle.battle_state == BattleState.listed)  # noqa
             .all()
@@ -316,7 +316,7 @@ async def accepts_list(sid, data):
     db_sess = database.create_session()  # noqa
 
     accepts = (
-        db_sess.query(Accept)
+        db_sess.query(Accept) # noqa
         .filter(Accept.battle_id == data["battle_id"])  # noqa
         .all()
     )  # noqa
