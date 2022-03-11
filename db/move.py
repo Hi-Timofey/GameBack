@@ -13,7 +13,7 @@ class Choice(IntEnum):
 
 
 class Move(SqlAlchemyBase):
-    __tablename__ = 'moves'
+    __tablename__ = "moves"
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 

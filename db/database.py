@@ -21,7 +21,7 @@ def global_init_sqlite(db_file):
     if not db_file or not db_file.strip():
         raise Exception("Required path to your DB.")
 
-    conn_str = f'sqlite:///{db_file.strip()}?check_same_thread=False'
+    conn_str = f"sqlite:///{db_file.strip()}?check_same_thread=False"
     print(f"Connecting to db by {conn_str}")
 
     engine = sa.create_engine(conn_str, echo=False)

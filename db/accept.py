@@ -5,17 +5,18 @@ from .nft import NFTType
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from web3 import Web3
-POLYGON_RPC = 'https://polygon-rpc.com/'
-ETHEREUM_RPC = 'https://nodes.mewapi.io/rpc/eth'
 
-SHROOMS_CONTRACT = '0xD558BF191abfe28CA37885605C7754E77F9DF0eF'
-BOTS_CONTRACT = '0x0111546FEB693b9d9d5886e362472886b71D5337'
+POLYGON_RPC = "https://polygon-rpc.com/"
+ETHEREUM_RPC = "https://nodes.mewapi.io/rpc/eth"
+
+SHROOMS_CONTRACT = "0xD558BF191abfe28CA37885605C7754E77F9DF0eF"
+BOTS_CONTRACT = "0x0111546FEB693b9d9d5886e362472886b71D5337"
 
 NFT_ABI = '[{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "walletOfOwner", "outputs": [ { "name": "balances", "type": "uint256[]" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "tokenId", "type": "uint256" } ], "name": "tokenURI", "outputs": [ { "name": "uri", "type": "string" } ], "payable": false, "type": "function"}]'
 
 
 class Accept(SqlAlchemyBase):
-    __tablename__ = 'accepts'
+    __tablename__ = "accepts"
 
     id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
 
@@ -23,7 +24,7 @@ class Accept(SqlAlchemyBase):
     nft_type = sa.Column(Enum(NFTType))
 
     battle_id = sa.Column(sa.Integer, sa.ForeignKey("battles.id"))
-    battle = orm.relationship("Battle", back_populates='accepts')
+    battle = orm.relationship("Battle", back_populates="accepts")
 
     owner_address = sa.Column(sa.String(42), sa.ForeignKey("users.address"))
 
