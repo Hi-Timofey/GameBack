@@ -6,4 +6,4 @@ echo "Run Black"
 echo "Run MyPy"
 ./venv/bin/mypy ./
 echo "Running Bandit"
-bandit --ini .bandit -rq db schemas server.py
+bandit --ini .bandit -rq ./
