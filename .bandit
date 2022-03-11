@@ -1,2 +1,5 @@
 [bandit]
-exclude: tests
+exclude_dirs:
+  - tests
+  - site-packages
+severity: high
