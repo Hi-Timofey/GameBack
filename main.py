@@ -24,16 +24,16 @@ from db.battle import Battle
 
 
 # Constants
-POLYGON_RPC = 'https://polygon-rpc.com/'
-ETHEREUM_RPC = 'https://nodes.mewapi.io/rpc/eth'
+POLYGON_RPC = "https://polygon-rpc.com/"
+ETHEREUM_RPC = "https://nodes.mewapi.io/rpc/eth"
 
-SHROOMS_CONTRACT = '0xD558BF191abfe28CA37885605C7754E77F9DF0eF'
-BOTS_CONTRACT = '0x0111546FEB693b9d9d5886e362472886b71D5337'
+SHROOMS_CONTRACT = "0xD558BF191abfe28CA37885605C7754E77F9DF0eF"
+BOTS_CONTRACT = "0x0111546FEB693b9d9d5886e362472886b71D5337"
 
 NFT_ABI = '[{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "walletOfOwner", "outputs": [ { "name": "balances", "type": "uint256[]" } ], "payable": false, "type": "function" }, { "constant": true, "inputs": [ { "name": "tokenId", "type": "uint256" } ], "name": "tokenURI", "outputs": [ { "name": "uri", "type": "string" } ], "payable": false, "type": "function"}]'
 # ---
 
-database.global_init_sqlite('db.sqlite')
+database.global_init_sqlite("db.sqlite")
 app = FastAPI()
 
 app.add_middleware(
@@ -60,8 +60,9 @@ def get_nft_base_uris():
 
 def check_session(db: Session, session_key: str) -> bool:
     try:
-        session_key = db.query(SessionKey).filter(
-            SessionKey.session_key == session_key).first()
+        session_key = (
+            db.query(SessionKey).filter(SessionKey.session_key == session_key).first()
+        )
         return session_key.verified
     except Exception:
         return False
@@ -69,7 +70,7 @@ def check_session(db: Session, session_key: str) -> bool:
 
 @app.get("/")
 async def index():
-    return 'Hello, im working'
+    return "Hello, im working"
 
 
 @app.post("/login")
@@ -88,19 +89,23 @@ async def login(response: Response, json: schemas.LoginAddress):
 
     response.status_code = status.HTTP_201_CREATED
     response.set_cookie(key="session_key", value=random_string)
-    return {'session_key': random_string}
+    return {"session_key": random_string}
 
 
 @app.post("/verify_signature")
-async def verify_signature(response: Response, json: schemas.LoginSigned, session_key: str):
+async def verify_signature(
+    response: Response, json: schemas.LoginSigned, session_key: str
+):
     db_sess = database.create_session()
     w3 = web3.Web3()
     signature = json.signature
     account_recovered = w3.eth.account.recover_message(
-        encode_defunct(text=session_key), signature=signature)
+        encode_defunct(text=session_key), signature=signature
+    )
 
-    session = db_sess.query(SessionKey).filter(
-        SessionKey.session_key == session_key).first()
+    session = (
+        db_sess.query(SessionKey).filter(SessionKey.session_key == session_key).first()
+    )
 
     if session.user_address == account_recovered:
         session.verified = True
@@ -113,7 +118,9 @@ async def verify_signature(response: Response, json: schemas.LoginSigned, sessio
 
 
 @app.post("/battles/create", response_model=schemas.Offer)
-async def create_offers(offer_json: schemas.Offer, response: Response, session_key: str = Cookie(None)):
+async def create_offers(
+    offer_json: schemas.Offer, response: Response, session_key: str = Cookie(None)
+):
 
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
@@ -149,7 +156,7 @@ async def list_offers(session_key: str, user_id: Optional[int] = None):
 
 
 @app.get("/battles/recommended", response_model=List[schemas.Offer])
-async def list_offers(session_key: str): # noqa
+async def list_offers(session_key: str):  # noqa
     db_sess = database.create_session()
 
     if not check_session(db_sess, session_key):
@@ -163,7 +170,7 @@ async def list_offers(session_key: str): # noqa
 
 
 # Endpoint from old repo GameBack
-@app.get('/battles/accepts', response_model=List[schemas.Accept])
+@app.get("/battles/accepts", response_model=List[schemas.Accept])
 def accepts_list(offer_id: int, session_key: str):
     db_sess = database.create_session()
 
@@ -174,7 +181,9 @@ def accepts_list(offer_id: int, session_key: str):
 
 
 @app.post("/battles/accept", response_model=schemas.Accept)
-async def accept_offer(accept_json: schemas.Accept, response: Response, session_key: str):
+async def accept_offer(
+    accept_json: schemas.Accept, response: Response, session_key: str
+):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
@@ -203,19 +212,18 @@ async def get_battle(battle_id: int, session_key: str):
 
 
 @app.post("/battles/start", response_model=schemas.Battle)
-async def start_battle(battle_json: schemas.Battle, response: Response, session_key: str):
+async def start_battle(
+    battle_json: schemas.Battle, response: Response, session_key: str
+):
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
 
-    if db_sess.query(Battle).filter(
-            Battle.offer_id == battle_json.offer_id).first():
+    if db_sess.query(Battle).filter(Battle.offer_id == battle_json.offer_id).first():
         raise HTTPException(status_code=400, detail="Battle already started")
 
-    offer = db_sess.query(Offer).filter(
-        Offer.id == battle_json.offer_id).first()
-    accept = db_sess.query(Accept).filter(
-        Accept.id == battle_json.accept_id).first()
+    offer = db_sess.query(Offer).filter(Offer.id == battle_json.offer_id).first()
+    accept = db_sess.query(Accept).filter(Accept.id == battle_json.accept_id).first()
 
     if offer.user_id == accept.user_id:
         raise HTTPException(status_code=400, detail="User can't fight himself")
@@ -233,13 +241,14 @@ async def start_battle(battle_json: schemas.Battle, response: Response, session_
 
 
 @app.post("/battles/move", response_model=schemas.Move)
-async def move_battle(move_json: schemas.Move, response: Response, session_key: str): # noqa
+async def move_battle(
+    move_json: schemas.Move, response: Response, session_key: str
+):  # noqa
     db_sess = database.create_session()
     if not check_session(db_sess, session_key):
         raise HTTPException(status_code=401)
 
-    battle = db_sess.query(Battle).filter(
-        Battle.id == move_json.battle_id).first()
+    battle = db_sess.query(Battle).filter(Battle.id == move_json.battle_id).first()
 
     if battle is None:
         raise HTTPException(status_code=400, detail="Battle not found")
@@ -250,15 +259,17 @@ async def move_battle(move_json: schemas.Move, response: Response, session_key: 
     if first_user_id == second_user_id:
         raise HTTPException(status_code=400, detail="User can't fight himself")
 
-    if not (first_user_id == move_json.user_id or second_user_id
-            == move_json.user_id):
+    if not (first_user_id == move_json.user_id or second_user_id == move_json.user_id):
         raise HTTPException(
-            status_code=400,
-            detail="User does not participate in this battle")
+            status_code=400, detail="User does not participate in this battle"
+        )
 
-    round_of_battle = db_sess.query(Round).filter(
-        Round.battle_id == battle.id).filter(Round.round_number == move_json.round
-                                             ).first()
+    round_of_battle = (
+        db_sess.query(Round)
+        .filter(Round.battle_id == battle.id)
+        .filter(Round.round_number == move_json.round)
+        .first()
+    )
 
     if round_of_battle is None:
         round_of_battle = Round()
@@ -323,7 +334,7 @@ async def get_battle_log(json: schemas.BattleId, session_key: str):
     return battle.log
 
 
-@app.get('/nfts/{address}', response_model=schemas.NFTBalance)
+@app.get("/nfts/{address}", response_model=schemas.NFTBalance)
 def nfts_by_address(address: str):
 
     address = web3.Web3.toChecksumAddress(address)
@@ -344,16 +355,18 @@ def nfts_by_address(address: str):
             schemas.NFT(
                 token_id=token_id,
                 nft_type=schemas.NFTType.shroom,
-                uri=shrooms_base_uri + str(token_id))
+                uri=shrooms_base_uri + str(token_id),
+            )
             for token_id in shroom_ids
         ],
         bots=[
             schemas.NFT(
                 token_id=token_id,
                 nft_type=schemas.NFTType.bot,
-                uri=bots_base_uri + str(token_id))
+                uri=bots_base_uri + str(token_id),
+            )
             for token_id in bot_ids
-        ]
+        ],
     )
 
 
