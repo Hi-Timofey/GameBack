@@ -1,4 +1,4 @@
-name: pytest-coverage-commentator
+name: PyTest
 on: push
 jobs:
   build:
