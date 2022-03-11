@@ -1,0 +1,19 @@
+name: MyPy
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [ "3.8" ]
+    name: MyPy
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      run: |
+        pip install mypy
+    - name: mypy
+      run: |
+        mypy *.py
