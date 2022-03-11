@@ -9,3 +9,5 @@ flake8
 black
 mypy
 bandit
+pytest
+pytest-cov
