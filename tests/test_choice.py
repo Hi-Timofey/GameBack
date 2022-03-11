@@ -1,4 +1,3 @@
-
 def test_choice():
 
-    assert True == True  # nosec
+    assert True == True  # nosec # noqa
