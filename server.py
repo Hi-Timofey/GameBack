@@ -421,7 +421,7 @@ async def round_timeout(battle_id):
         logging.debug("1 random move")
         random_move = Move()  # noqa
         random_move.round_id = round_of_battle.id
-        random_move.choice = random.choice(list(Choice))  # noqa
+        random_move.choice = random.choice(list(Choice))  # noqa # nosec
         if round_of_battle.moves[0].owner_address == creator_info.address:
             random_move.owner_address == acceptor_info.address
         else:
@@ -431,13 +431,13 @@ async def round_timeout(battle_id):
         logging.debug("2 random move")
         first_move = Move()  # noqa
         first_move.round_id = round_of_battle.id
-        first_move.choice = random.choice(list(Choice))  # noqa
+        first_move.choice = random.choice(list(Choice))  # noqa # nosec
         first_move.owner_address = creator_info.address
         round_of_battle.moves.append(first_move)
 
         second_move = Move()  # noqa
         second_move.round_id = round_of_battle.id
-        second_move.choice = random.choice(list(Choice))  # noqa
+        second_move.choice = random.choice(list(Choice))  # noqa # nosec
         second_move.owner_address = acceptor_info.address
         round_of_battle.moves.append(second_move)
     else:
@@ -635,4 +635,4 @@ if __name__ == "__main__":
         format="%(asctime)s | %(levelname)s - %(message)s",
     )
 
-    app.run("0.0.0.0", 80)
+    app.run("0.0.0.0", 80)  # nosec
