@@ -6,3 +6,4 @@ web3==5.28.0
 pydantic_sqlalchemy
 fastapi
 flake8
+black

@@ -9,6 +9,7 @@ jobs:
       matrix:
         python-version: ["3.8"]
     steps:
+      - uses: actions/checkout@v2
       - name: Checkout PyTorch
         uses: actions/checkout@master
       - name: Install flake8
