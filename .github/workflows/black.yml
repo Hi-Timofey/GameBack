@@ -1,7 +1,7 @@
 name: Black
 on: [push]
 jobs:
-  linter_name:
+  build:
     name: runner / black formatter
     runs-on: ubuntu-latest
     strategy:
