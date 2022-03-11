@@ -1,5 +1,6 @@
-[![Flake8](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml/badge.svg?branch=main)](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml)
-[![Black](https://github.com/BattleVerseIo/GameBack/actions/workflows/black.yml/badge.svg?branch=main)](https://github.com/BattleVerseIo/GameBack/actions/workflows/black.yml)
+[![Flake8](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml/badge.svg)](https://github.com/BattleVerseIo/GameBack/actions/workflows/flake8.yml)
+[![Black](https://github.com/BattleVerseIo/GameBack/actions/workflows/black.yml/badge.svg)](https://github.com/BattleVerseIo/GameBack/actions/workflows/black.yml)
+[![MyPy](https://github.com/BattleVerseIo/GameBack/actions/workflows/mypy.yml/badge.svg)](https://github.com/BattleVerseIo/GameBack/actions/workflows/mypy.yml)
 # BV Game backend
 
 ## Description
