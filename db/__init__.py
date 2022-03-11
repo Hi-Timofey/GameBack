@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from pydantic_sqlalchemy import sqlalchemy_to_pydantic
+from pydantic_sqlalchemy import sqlalchemy_to_pydantic # type: ignore
 
 # Importing models for out database
 from .database import *  # noqa

@@ -10,3 +10,6 @@ This is new python version of backend implemented via fastapi
 ## How to run  
 
     $ python3 main.py
+
+## Before push branch run
+    $ ./test.sh
