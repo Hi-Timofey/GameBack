@@ -2,7 +2,11 @@ import logging
 import time
 import asyncio
 import socketio  # type: ignore
-from sanic import Sanic
+
+from fastapi import FastAPI
+import uvicorn
+
+
 import json
 from dataclasses import dataclass
 from eth_account.messages import encode_defunct
@@ -63,7 +67,7 @@ battles = {}  # type: ignore
 accepts = {}
 
 database.global_init_sqlite("db.sqlite")  # type: ignore # noqa
-sio = socketio.AsyncServer(async_mode="sanic", cors_allowed_origins="*")
+sio = socketio.AsyncServer(async_mode="asgi")
 
 # Connect and disconnect handlers
 
@@ -624,9 +628,11 @@ async def get_battle_log(sid, data):
     return json.dumps(dict_log)
 
 
+app = FastAPI()
+
+app.mount("/sio", socketio.ASGIApp(sio))
+
 if __name__ == "__main__":
-    app = Sanic(name="GameBack")
-    sio.attach(app)
 
     logging.basicConfig(
         # filename='app.log',
@@ -635,4 +641,4 @@ if __name__ == "__main__":
         format="%(asctime)s | %(levelname)s - %(message)s",
     )
 
-    app.run("0.0.0.0", 80)  # nosec
+    uvicorn.run(app, port=80)
